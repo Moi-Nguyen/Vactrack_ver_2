@@ -64,8 +64,8 @@ fun LoginScreen(
     var password by rememberSaveable { mutableStateOf("") }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
     var loginError by rememberSaveable { mutableStateOf(false) }
-    val demoEmail = "demo@vactrack.com"
-    val demoPassword = "Vactrack123"
+    val demoEmail = "admin"
+    val demoPassword = "1"
 
     Box(
         modifier = modifier
