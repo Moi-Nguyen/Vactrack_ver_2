@@ -62,13 +62,19 @@ fun ProfileBenhNhanScreen(
     val detailLabel = "Chi tiết"
     val editLabel = "Chỉnh sửa"
 
-    // lấy dữ liệu động từ Controller
-    val patientRecords = PatientController.patients.map {
+    // Map từ Patient -> PatientRecord (ghép địa chỉ đầy đủ để hiển thị)
+    val patientRecords = PatientController.patients.map { p ->
+        val fullAddress = buildString {
+            append(p.addressLine)
+            if (p.ward.isNotBlank()) append(", ${p.ward}")
+            if (p.district.isNotBlank()) append(", ${p.district}")
+            if (p.province.isNotBlank()) append(", ${p.province}")
+        }
         PatientRecord(
-            name = it.name,
-            phone = it.phone,
-            birthDate = it.birthDate,
-            address = it.address
+            name = p.name,
+            phone = p.phone,
+            birthDate = p.birthDate,
+            address = fullAddress
         )
     }
 
@@ -138,8 +144,8 @@ fun ProfileBenhNhanScreen(
                         detailLabel = detailLabel,
                         editLabel = editLabel,
                         onEditClick = {
-                            PatientController.startEditing(index) // << quan trọng
-                            onRegisterNew() // điều hướng sang CreateProfileScreen
+                            PatientController.startEditing(index)
+                            onRegisterNew()
                         }
                     )
                 }

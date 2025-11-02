@@ -3,16 +3,7 @@ package com.example.vactrack_ver1.view.profile_benh_nhan
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -20,12 +11,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -39,7 +26,6 @@ import androidx.compose.ui.unit.sp
 import com.example.vactrack_ver1.design.BrandPalette
 import com.example.vactrack_ver1.ui.theme.Vactrack_ver1Theme
 import com.example.vactrack_ver1.controller.PatientController
-import com.example.vactrack_ver1.view.profile_benh_nhan.Patient
 
 @Composable
 fun CreateProfileScreen(
@@ -63,17 +49,41 @@ fun CreateProfileScreen(
     var province by rememberSaveable { mutableStateOf("") }
     var district by rememberSaveable { mutableStateOf("") }
     var ward by rememberSaveable { mutableStateOf("") }
-    var address by rememberSaveable { mutableStateOf("") }
+    var address by rememberSaveable { mutableStateOf("") } // addressLine
 
-    // Prefill khi đang chỉnh sửa (chỉ những field đã lưu trong Patient)
+    // Prefill TẤT CẢ field khi đang chỉnh sửa
     LaunchedEffect(Unit) {
         PatientController.getEditing()?.let { p ->
-            if (fullName.isEmpty() && birthDate.isEmpty() && address.isEmpty()) {
+            // chỉ set khi lần đầu vào (tránh override khi user đang gõ)
+            if (fullName.isEmpty() &&
+                birthDate.isEmpty() &&
+                gender.isEmpty() &&
+                nationalId.isEmpty() &&
+                insurance.isEmpty() &&
+                occupation.isEmpty() &&
+                phone.isEmpty() &&
+                email.isEmpty() &&
+                nationality.isNotEmpty() && // đã có default -> không ép
+                ethnicity.isEmpty() &&
+                province.isEmpty() &&
+                district.isEmpty() &&
+                ward.isEmpty() &&
+                address.isEmpty()
+            ) {
                 fullName = p.name
                 birthDate = p.birthDate
+                gender = p.gender
+                nationalId = p.nationalId
+                insurance = p.insurance
+                occupation = p.occupation
                 phone = p.phone
-                // địa chỉ đã được ghép chuỗi khi lưu; nếu muốn tách lại, bạn có thể parse theo dấu phẩy
-                address = p.address
+                email = p.email
+                nationality = p.nationality
+                ethnicity = p.ethnicity
+                province = p.province
+                district = p.district
+                ward = p.ward
+                address = p.addressLine
             }
         }
     }
@@ -81,7 +91,8 @@ fun CreateProfileScreen(
     val dobValid = birthDate.matches(Regex("^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/[0-9]{4}$"))
     val requiredValid =
         fullName.isNotBlank() && dobValid && gender.isNotBlank() && nationalId.isNotBlank() &&
-                nationality.isNotBlank() && province.isNotBlank() && district.isNotBlank() && ward.isNotBlank() && address.isNotBlank()
+                nationality.isNotBlank() && province.isNotBlank() && district.isNotBlank() &&
+                ward.isNotBlank() && address.isNotBlank()
 
     Surface(modifier = modifier.fillMaxSize(), color = screenBackground) {
         Scaffold(
@@ -96,7 +107,7 @@ fun CreateProfileScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         IconButton(onClick = {
-                            PatientController.cancelEditing() // << nếu user back khi đang chỉnh
+                            PatientController.cancelEditing()  // nếu back khi đang sửa
                             onBackClick()
                         }) {
                             Icon(
@@ -129,13 +140,7 @@ fun CreateProfileScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 SectionCard(title = "Thông tin chung") {
-                    LabeledField(
-                        label = "Họ và tên (có dấu)",
-                        required = true,
-                        value = fullName,
-                        onValueChange = { fullName = it },
-                        placeholder = "Nhập họ và tên..."
-                    )
+                    LabeledField("Họ và tên (có dấu)", true, fullName, { fullName = it }, "Nhập họ và tên...")
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -159,109 +164,43 @@ fun CreateProfileScreen(
                             modifier = Modifier.weight(1f)
                         )
                     }
-                    LabeledField(
-                        label = "Mã định danh/CCCD/Passport",
-                        required = true,
-                        value = nationalId,
-                        onValueChange = { nationalId = it },
-                        placeholder = "Nhập mã định danh/CCCD/Passport..."
-                    )
-                    LabeledField(
-                        label = "Mã bảo hiểm y tế",
-                        required = false,
-                        value = insurance,
-                        onValueChange = { insurance = it },
-                        placeholder = "Nhập mã bảo hiểm y tế..."
-                    )
-                    LabeledField(
-                        label = "Nghề nghiệp",
-                        required = false,
-                        value = occupation,
-                        onValueChange = { occupation = it },
-                        placeholder = "Chọn nghề nghiệp..."
-                    )
-                    LabeledField(
-                        label = "Số điện thoại",
-                        required = false,
-                        value = phone,
-                        onValueChange = { phone = it },
-                        placeholder = "09xxxxxxxx",
-                        keyboardType = KeyboardType.Phone
-                    )
-                    LabeledField(
-                        label = "Email (dùng để nhận phiếu khám)",
-                        required = false,
-                        value = email,
-                        onValueChange = { email = it },
-                        placeholder = "Nhập email...",
-                        keyboardType = KeyboardType.Email
-                    )
-                    LabeledField(
-                        label = "Quốc gia",
-                        required = true,
-                        value = nationality,
-                        onValueChange = { nationality = it },
-                        placeholder = defaultNationality
-                    )
-                    LabeledField(
-                        label = "Dân tộc",
-                        required = false,
-                        value = ethnicity,
-                        onValueChange = { ethnicity = it },
-                        placeholder = "Chọn dân tộc..."
-                    )
+                    LabeledField("Mã định danh/CCCD/Passport", true, nationalId, { nationalId = it }, "Nhập mã định danh/CCCD/Passport...")
+                    LabeledField("Mã bảo hiểm y tế", false, insurance, { insurance = it }, "Nhập mã bảo hiểm y tế...")
+                    LabeledField("Nghề nghiệp", false, occupation, { occupation = it }, "Chọn nghề nghiệp...")
+                    LabeledField("Số điện thoại", false, phone, { phone = it }, "09xxxxxxxx", keyboardType = KeyboardType.Phone)
+                    LabeledField("Email (dùng để nhận phiếu khám)", false, email, { email = it }, "Nhập email...", keyboardType = KeyboardType.Email)
+                    LabeledField("Quốc gia", true, nationality, { nationality = it }, defaultNationality)
+                    LabeledField("Dân tộc", false, ethnicity, { ethnicity = it }, "Chọn dân tộc...")
                 }
 
                 SectionCard(title = "Địa chỉ theo CCCD") {
-                    LabeledField(
-                        label = "Tỉnh/Thành phố",
-                        required = true,
-                        value = province,
-                        onValueChange = { province = it },
-                        placeholder = "Chọn Tỉnh/Thành phố..."
-                    )
-                    LabeledField(
-                        label = "Quận/Huyện",
-                        required = true,
-                        value = district,
-                        onValueChange = { district = it },
-                        placeholder = "Chọn Quận/Huyện..."
-                    )
-                    LabeledField(
-                        label = "Phường/Xã",
-                        required = true,
-                        value = ward,
-                        onValueChange = { ward = it },
-                        placeholder = "Chọn Phường/Xã..."
-                    )
-                    LabeledField(
-                        label = "Số nhà/Tên đường/Ấp thôn xóm",
-                        required = true,
-                        value = address,
-                        onValueChange = { address = it },
-                        placeholder = "Chỉ nhập số nhà, tên đường, ấp thôn xóm..."
-                    )
+                    LabeledField("Tỉnh/Thành phố", true, province, { province = it }, "Chọn Tỉnh/Thành phố...")
+                    LabeledField("Quận/Huyện", true, district, { district = it }, "Chọn Quận/Huyện...")
+                    LabeledField("Phường/Xã", true, ward, { ward = it }, "Chọn Phường/Xã...")
+                    LabeledField("Số nhà/Tên đường/Ấp thôn xóm", true, address, { address = it }, "Chỉ nhập số nhà, tên đường, ấp thôn xóm...")
                 }
 
-                // Nút lưu: nếu đang chỉnh -> cập nhật; nếu không -> tạo mới
                 Button(
                     onClick = {
-                        val addressCombined = buildString {
-                            append(address)
-                            if (ward.isNotBlank()) append(", $ward")
-                            if (district.isNotBlank()) append(", $district")
-                            if (province.isNotBlank()) append(", $province")
-                        }
-
                         val payload = Patient(
                             name = fullName,
                             phone = phone,
                             birthDate = birthDate,
-                            address = addressCombined
+                            gender = gender,
+                            nationalId = nationalId,
+                            insurance = insurance,
+                            occupation = occupation,
+                            email = email,
+                            nationality = nationality,
+                            ethnicity = ethnicity,
+                            province = province,
+                            district = district,
+                            ward = ward,
+                            addressLine = address
                         )
 
                         if (PatientController.getEditing() != null) {
-                            PatientController.applyEdit(payload) // ghi đè
+                            PatientController.applyEdit(payload) // cập nhật
                         } else {
                             PatientController.addPatient(payload) // thêm mới
                         }
@@ -280,10 +219,7 @@ fun CreateProfileScreen(
                         disabledContentColor = Color.White
                     )
                 ) {
-                    Text(
-                        text = "Tạo hồ sơ mới",
-                        style = MaterialTheme.typography.labelLarge.copy(fontSize = 16.sp)
-                    )
+                    Text("Tạo hồ sơ mới", style = MaterialTheme.typography.labelLarge.copy(fontSize = 16.sp))
                 }
             }
         }
@@ -338,18 +274,8 @@ private fun LabeledField(
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = label,
-                color = Color(0xFF4A4A4A),
-                style = MaterialTheme.typography.labelLarge
-            )
-            if (required) {
-                Text(
-                    text = " *",
-                    color = Color(0xFFD32F2F),
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
+            Text(text = label, color = Color(0xFF4A4A4A), style = MaterialTheme.typography.labelLarge)
+            if (required) Text(text = " *", color = Color(0xFFD32F2F), style = MaterialTheme.typography.labelLarge)
         }
         OutlinedTextField(
             value = value,
@@ -371,11 +297,7 @@ private fun LabeledField(
             )
         )
         if (isError) {
-            Text(
-                text = "Định dạng ngày sinh phải là dd/mm/yyyy",
-                color = Color(0xFFD32F2F),
-                style = MaterialTheme.typography.bodySmall
-            )
+            Text("Định dạng ngày sinh phải là dd/mm/yyyy", color = Color(0xFFD32F2F), style = MaterialTheme.typography.bodySmall)
         }
     }
 }
@@ -383,7 +305,5 @@ private fun LabeledField(
 @Preview(showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
 private fun CreateProfilePreview() {
-    Vactrack_ver1Theme {
-        CreateProfileScreen()
-    }
+    Vactrack_ver1Theme { CreateProfileScreen() }
 }
