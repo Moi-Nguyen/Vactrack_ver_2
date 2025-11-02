@@ -6,7 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,7 +31,7 @@ import androidx.compose.ui.unit.sp
 import com.example.vactrack_ver1.R
 import com.example.vactrack_ver1.design.BrandPalette
 import com.example.vactrack_ver1.ui.theme.Vactrack_ver1Theme
-import androidx.compose.runtime.saveable.rememberSaveable
+import com.example.vactrack_ver1.controller.PatientController
 
 private data class PatientRecord(
     val name: String,
@@ -58,17 +59,14 @@ fun ProfileBenhNhanScreen(
     val scanLabel = "QUÉT MÃ BHYT/CCCD"
     val dialogTitle = "Thông báo"
     val dialogMessage = "Tính năng quét mã BHYT/CCCD hiện chưa khả dụng."
-    val detailLabel = "Chi tiết"
-    val healthLabel = "Thông tin sức khoẻ"
 
-    val patientRecords = listOf(
-        PatientRecord(
-            name = "Lê Đức Anh",
-            phone = "0123456789",
-            birthDate = "17/10/2005",
-            address = "02 Võ Oanh, Thạnh Lộc, Mỹ Tây, Thành phố Hồ Chí Minh, Việt Nam"
-        )
-    )
+    // Đổi nhãn nút phải thành “Chỉnh sửa”
+    val detailLabel = "Chi tiết"
+    val editLabel = "Chỉnh sửa"
+
+    val patientRecords = PatientController.patients.map {
+        PatientRecord(it.name, it.phone, it.birthDate, it.address)
+    }
 
     Surface(modifier = modifier.fillMaxSize(), color = Color(0xFFF3F9FF)) {
         Scaffold(
@@ -130,8 +128,16 @@ fun ProfileBenhNhanScreen(
                     .padding(horizontal = 20.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                items(patientRecords) { record ->
-                    PatientRecordCard(record)
+                itemsIndexed(patientRecords) { index, record ->
+                    PatientRecordCard(
+                        record = record,
+                        onEditClick = {
+                            PatientController.startEditing(index)
+                            onRegisterNew() // tái dùng flow điều hướng sang CreateProfile
+                        },
+                        editLabel = editLabel,
+                        detailLabel = detailLabel
+                    )
                 }
             }
         }
@@ -214,7 +220,12 @@ fun ProfileBenhNhanScreen(
 }
 
 @Composable
-private fun PatientRecordCard(record: PatientRecord) {
+private fun PatientRecordCard(
+    record: PatientRecord,
+    onEditClick: () -> Unit,
+    editLabel: String,
+    detailLabel: String
+) {
     Card(
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -246,10 +257,10 @@ private fun PatientRecordCard(record: PatientRecord) {
                     border = BorderStroke(1.dp, BrandPalette.OceanBlue),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = BrandPalette.OceanBlue)
                 ) {
-                    Text(text = "Chi tiết")
+                    Text(text = detailLabel)
                 }
                 Button(
-                    onClick = { /* TODO */ },
+                    onClick = onEditClick,
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(50),
                     colors = ButtonDefaults.buttonColors(
@@ -257,7 +268,7 @@ private fun PatientRecordCard(record: PatientRecord) {
                         contentColor = Color.White
                     )
                 ) {
-                    Text(text = "Thông tin sức khoẻ")
+                    Text(text = editLabel)
                 }
             }
         }

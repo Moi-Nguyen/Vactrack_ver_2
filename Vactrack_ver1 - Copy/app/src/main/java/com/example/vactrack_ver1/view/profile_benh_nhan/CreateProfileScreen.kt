@@ -32,6 +32,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -48,6 +49,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.vactrack_ver1.design.BrandPalette
 import com.example.vactrack_ver1.ui.theme.Vactrack_ver1Theme
+
+// MVC: dùng Controller để lưu/đọc dữ liệu
+import com.example.vactrack_ver1.controller.PatientController
+import com.example.vactrack_ver1.view.profile_benh_nhan.Patient
 
 @Composable
 fun CreateProfileScreen(
@@ -73,10 +78,23 @@ fun CreateProfileScreen(
     var ward by rememberSaveable { mutableStateOf("") }
     var address by rememberSaveable { mutableStateOf("") }
 
+    // Prefill khi đang chỉnh sửa (chỉ những field đã lưu trong Patient)
+    LaunchedEffect(Unit) {
+        PatientController.getEditing()?.let { p ->
+            if (fullName.isEmpty() && birthDate.isEmpty() && address.isEmpty()) {
+                fullName = p.name
+                birthDate = p.birthDate
+                phone = p.phone
+                // địa chỉ đã được ghép chuỗi khi lưu; nếu muốn tách lại, bạn có thể parse theo dấu phẩy
+                address = p.address
+            }
+        }
+    }
+
     val dobValid = birthDate.matches(Regex("^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/[0-9]{4}$"))
     val requiredValid =
         fullName.isNotBlank() && dobValid && gender.isNotBlank() && nationalId.isNotBlank() &&
-            nationality.isNotBlank() && province.isNotBlank() && district.isNotBlank() && ward.isNotBlank() && address.isNotBlank()
+                nationality.isNotBlank() && province.isNotBlank() && district.isNotBlank() && ward.isNotBlank() && address.isNotBlank()
 
     Surface(modifier = modifier.fillMaxSize(), color = screenBackground) {
         Scaffold(
@@ -235,8 +253,31 @@ fun CreateProfileScreen(
                     )
                 }
 
+                // Nút lưu: nếu đang chỉnh -> cập nhật; nếu không -> tạo mới
                 Button(
-                    onClick = onSubmit,
+                    onClick = {
+                        val addressCombined = buildString {
+                            append(address)
+                            if (ward.isNotBlank()) append(", $ward")
+                            if (district.isNotBlank()) append(", $district")
+                            if (province.isNotBlank()) append(", $province")
+                        }
+
+                        val payload = Patient(
+                            name = fullName,
+                            phone = phone,
+                            birthDate = birthDate,
+                            address = addressCombined
+                        )
+
+                        if (PatientController.getEditing() != null) {
+                            PatientController.applyEdit(payload) // cập nhật
+                        } else {
+                            PatientController.addPatient(payload) // thêm mới
+                        }
+
+                        onSubmit()
+                    },
                     enabled = requiredValid,
                     modifier = Modifier
                         .fillMaxWidth()
