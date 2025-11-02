@@ -7,26 +7,33 @@ import com.example.vactrack_ver1.view.profile_benh_nhan.Patient
 object PatientController {
     val patients: SnapshotStateList<Patient> = mutableStateListOf()
 
-    // Chỉ số của item đang chỉnh sửa (nếu có)
-    var editingIndex: Int? = null
-        private set
+    // chỉ số item đang chỉnh (null nếu không chỉnh)
+    private var editingIndex: Int? = null
 
     fun addPatient(p: Patient) {
+        // thêm mới lên đầu danh sách
         patients.add(0, p)
     }
 
+    /** Gọi khi nhấn "Chỉnh sửa" trên list */
     fun startEditing(index: Int) {
         editingIndex = index
     }
 
+    /** Lấy dữ liệu đang chỉnh để prefill form */
     fun getEditing(): Patient? = editingIndex?.let { i -> patients.getOrNull(i) }
 
+    /** Áp dụng cập nhật: GHI ĐÈ phần tử cũ thay vì thêm mới */
     fun applyEdit(updated: Patient) {
-        editingIndex?.let { i ->
-            if (i in patients.indices) {
-                patients[i] = updated
-            }
+        val i = editingIndex
+        if (i != null && i in patients.indices) {
+            patients[i] = updated
         }
+        editingIndex = null
+    }
+
+    /** Hủy chế độ chỉnh sửa (khi back/đóng form) */
+    fun cancelEditing() {
         editingIndex = null
     }
 

@@ -19,18 +19,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,8 +38,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.vactrack_ver1.design.BrandPalette
 import com.example.vactrack_ver1.ui.theme.Vactrack_ver1Theme
-
-// MVC: dùng Controller để lưu/đọc dữ liệu
 import com.example.vactrack_ver1.controller.PatientController
 import com.example.vactrack_ver1.view.profile_benh_nhan.Patient
 
@@ -108,7 +95,10 @@ fun CreateProfileScreen(
                             .padding(horizontal = 20.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = onBackClick) {
+                        IconButton(onClick = {
+                            PatientController.cancelEditing() // << nếu user back khi đang chỉnh
+                            onBackClick()
+                        }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Quay lại",
@@ -271,7 +261,7 @@ fun CreateProfileScreen(
                         )
 
                         if (PatientController.getEditing() != null) {
-                            PatientController.applyEdit(payload) // cập nhật
+                            PatientController.applyEdit(payload) // ghi đè
                         } else {
                             PatientController.addPatient(payload) // thêm mới
                         }

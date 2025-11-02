@@ -59,13 +59,17 @@ fun ProfileBenhNhanScreen(
     val scanLabel = "QUÉT MÃ BHYT/CCCD"
     val dialogTitle = "Thông báo"
     val dialogMessage = "Tính năng quét mã BHYT/CCCD hiện chưa khả dụng."
-
-    // Đổi nhãn nút phải thành “Chỉnh sửa”
     val detailLabel = "Chi tiết"
     val editLabel = "Chỉnh sửa"
 
+    // lấy dữ liệu động từ Controller
     val patientRecords = PatientController.patients.map {
-        PatientRecord(it.name, it.phone, it.birthDate, it.address)
+        PatientRecord(
+            name = it.name,
+            phone = it.phone,
+            birthDate = it.birthDate,
+            address = it.address
+        )
     }
 
     Surface(modifier = modifier.fillMaxSize(), color = Color(0xFFF3F9FF)) {
@@ -131,12 +135,12 @@ fun ProfileBenhNhanScreen(
                 itemsIndexed(patientRecords) { index, record ->
                     PatientRecordCard(
                         record = record,
-                        onEditClick = {
-                            PatientController.startEditing(index)
-                            onRegisterNew() // tái dùng flow điều hướng sang CreateProfile
-                        },
+                        detailLabel = detailLabel,
                         editLabel = editLabel,
-                        detailLabel = detailLabel
+                        onEditClick = {
+                            PatientController.startEditing(index) // << quan trọng
+                            onRegisterNew() // điều hướng sang CreateProfileScreen
+                        }
                     )
                 }
             }
@@ -222,9 +226,9 @@ fun ProfileBenhNhanScreen(
 @Composable
 private fun PatientRecordCard(
     record: PatientRecord,
-    onEditClick: () -> Unit,
+    detailLabel: String,
     editLabel: String,
-    detailLabel: String
+    onEditClick: () -> Unit
 ) {
     Card(
         shape = RoundedCornerShape(18.dp),
