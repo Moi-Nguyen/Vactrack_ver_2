@@ -118,7 +118,7 @@ fun LoginScreen(
                     email = it
                     loginError = false
                 },
-                placeholder = "demo@vactrack.com"
+                placeholder = "admin"
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -184,7 +184,7 @@ fun LoginScreen(
             if (loginError) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "Email hoặc mật khẩu không đúng. Sử dụng demo@vactrack.com / Vactrack123.",
+                    text = "Email hoặc mật khẩu không đúng. Sử dụng admin/ 1.",
                     color = Color(0xFFD32F2F),
                     fontSize = 13.sp,
                     textAlign = TextAlign.Center
