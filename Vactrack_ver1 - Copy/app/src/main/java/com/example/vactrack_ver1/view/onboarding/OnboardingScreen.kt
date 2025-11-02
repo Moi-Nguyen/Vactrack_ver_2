@@ -50,7 +50,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 
-private const val AUTO_PLAY_DELAY_MS = 2_000L
+private const val AUTO_PLAY_DELAY_MS = 1_000L
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
