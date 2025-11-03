@@ -5,7 +5,7 @@ data class Patient(
     val phone: String,
     val birthDate: String,
 
-    // Các thông tin thêm để prefill đầy đủ
+    // Các thông tin thêm để prefill hồ sơ
     val gender: String = "",
     val nationalId: String = "",
     val insurance: String = "",
@@ -14,9 +14,9 @@ data class Patient(
     val nationality: String = "Việt Nam",
     val ethnicity: String = "",
 
-    // Địa chỉ: lưu riêng từng phần để khi sửa có thể prefill chính xác
+    // Địa chỉ: lưu riêng từng phần để dễ chỉnh sửa và prefill chính xác
     val province: String = "",
     val district: String = "",
     val ward: String = "",
-    val addressLine: String = ""   // Số nhà/Tên đường/Ấp thôn xóm
+    val addressLine: String = ""   // Số nhà/Tên đường/ấp thôn xóm
 )

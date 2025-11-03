@@ -46,7 +46,8 @@ fun ProfileBenhNhanScreen(
     modifier: Modifier = Modifier,
     onBackClick: () -> Unit = {},
     onCreateClick: () -> Unit = {},
-    onRegisterNew: () -> Unit = {}
+    onRegisterNew: () -> Unit = {},
+    onDetailClick: (Int) -> Unit = {}
 ) {
     var showCreateSheet by rememberSaveable { mutableStateOf(false) }
     var showScanNotice by rememberSaveable { mutableStateOf(false) }
@@ -143,6 +144,7 @@ fun ProfileBenhNhanScreen(
                         record = record,
                         detailLabel = detailLabel,
                         editLabel = editLabel,
+                        onDetailClick = { onDetailClick(index) },
                         onEditClick = {
                             PatientController.startEditing(index)
                             onRegisterNew()
@@ -234,6 +236,7 @@ private fun PatientRecordCard(
     record: PatientRecord,
     detailLabel: String,
     editLabel: String,
+    onDetailClick: () -> Unit,
     onEditClick: () -> Unit
 ) {
     Card(
@@ -261,7 +264,7 @@ private fun PatientRecordCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 OutlinedButton(
-                    onClick = { /* TODO */ },
+                    onClick = onDetailClick,
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(50),
                     border = BorderStroke(1.dp, BrandPalette.OceanBlue),

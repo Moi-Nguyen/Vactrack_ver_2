@@ -61,6 +61,8 @@ import androidx.compose.ui.unit.sp
 import com.example.vactrack_ver1.R
 import com.example.vactrack_ver1.design.BrandPalette
 import com.example.vactrack_ver1.ui.theme.Vactrack_ver1Theme
+import com.example.vactrack_ver1.view.components.MainBottomNavItem
+import com.example.vactrack_ver1.view.components.MainBottomNavigationBar
 
 data class QuickAction(val title: String, val icon: Int)
 data class HospitalHighlight(val name: String, val address: String)
@@ -113,7 +115,10 @@ fun HomeScreenScaffold(
     hospitals: List<HospitalHighlight> = hospitalsSample,
     doctors: List<DoctorHighlight> = doctorsSample,
     modifier: Modifier = Modifier,
-    onProfileClick: () -> Unit = {}
+    onProfileClick: () -> Unit = {},
+    onTicketClick: () -> Unit = {},
+    onNotificationClick: () -> Unit = {},
+    onAccountClick: () -> Unit = {}
 ) {
     var showPatientRecords by rememberSaveable { mutableStateOf(false) }
 
@@ -130,14 +135,19 @@ fun HomeScreenScaffold(
             }
         },
         bottomBar = {
-            BottomNavigationBar(
-                isHomeActive = !showPatientRecords,
-                isProfileActive = showPatientRecords,
+            MainBottomNavigationBar(
+                activeItem = when {
+                    showPatientRecords -> MainBottomNavItem.Profile
+                    else -> MainBottomNavItem.Home
+                },
                 onHomeClick = { showPatientRecords = false },
                 onProfileClick = {
                     showPatientRecords = true
                     onProfileClick()
-                }
+                },
+                onTicketClick = onTicketClick,
+                onNotificationClick = onNotificationClick,
+                onAccountClick = onAccountClick
             )
         },
         containerColor = Color.White
@@ -614,99 +624,6 @@ private fun DoctorCard(doctor: DoctorHighlight) {
                 Text(text = "Tư vấn ngay", fontSize = 12.sp)
             }
         }
-    }
-}
-
-@Composable
-private fun BottomNavigationBar(
-    isHomeActive: Boolean,
-    isProfileActive: Boolean,
-    onHomeClick: () -> Unit,
-    onProfileClick: () -> Unit
-) {
-    Surface(
-        shape = RoundedCornerShape(28.dp),
-        color = Color.White,
-        tonalElevation = 6.dp,
-        shadowElevation = 6.dp,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 12.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(0.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            BottomNavItem(
-                title = "Trang chủ",
-                iconRes = R.drawable.img_trang_chu,
-                active = isHomeActive,
-                modifier = Modifier.weight(1f),
-                onClick = onHomeClick
-            )
-            BottomNavItem(
-                title = "Hồ sơ",
-                iconRes = R.drawable.img_ho_so,
-                active = isProfileActive,
-                modifier = Modifier.weight(1f),
-                onClick = onProfileClick
-            )
-            BottomNavItem(
-                title = "Phiếu khám",
-                iconRes = R.drawable.img_phieu_kham,
-                modifier = Modifier.weight(1f)
-            )
-            BottomNavItem(
-                title = "Thông báo",
-                iconRes = R.drawable.img_thong_bao,
-                modifier = Modifier.weight(1f)
-            )
-            BottomNavItem(
-                title = "Tài khoản",
-                iconRes = R.drawable.img_tai_khoan,
-                modifier = Modifier.weight(1f)
-            )
-        }
-    }
-}
-
-@Composable
-private fun BottomNavItem(
-    title: String,
-    iconRes: Int,
-    active: Boolean = false,
-    modifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null
-) {
-    val itemModifier = if (onClick != null) {
-        modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-    } else {
-        modifier.fillMaxWidth()
-    }
-
-    Column(
-        modifier = itemModifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Surface(shape = CircleShape, color = Color.Transparent) {
-            Image(
-                painter = painterResource(id = iconRes),
-                contentDescription = title,
-                modifier = Modifier.size(28.dp),
-                contentScale = ContentScale.Fit
-            )
-        }
-        Text(
-            text = title,
-            color = if (active) BrandPalette.OceanBlue else BrandPalette.SlateGrey.copy(alpha = 0.7f),
-            style = MaterialTheme.typography.labelMedium
-        )
     }
 }
 

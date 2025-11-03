@@ -20,7 +20,12 @@ import com.example.vactrack_ver1.view.login.PasswordResetScreen
 import com.example.vactrack_ver1.view.login.NewPasswordScreen
 import com.example.vactrack_ver1.view.login.PasswordUpdateSuccessScreen
 import com.example.vactrack_ver1.view.home.HomeScreenScaffold
+import com.example.vactrack_ver1.view.profile_benh_nhan.PatientDetailScreen
 import com.example.vactrack_ver1.view.profile_benh_nhan.ProfileBenhNhanScreen
+import com.example.vactrack_ver1.controller.PatientController
+import com.example.vactrack_ver1.view.phieu_kham.TicketListScreen
+import com.example.vactrack_ver1.view.notification.NotificationListScreen
+import com.example.vactrack_ver1.view.account.AccountScreen
 import com.example.vactrack_ver1.view.profile_benh_nhan.CreateProfileScreen
 
 class MainActivity : ComponentActivity() {
@@ -35,6 +40,7 @@ class MainActivity : ComponentActivity() {
                 var currentDestination by rememberSaveable {
                     mutableStateOf(MainDestination.Onboarding.name)
                 }
+                var selectedPatientIndex by rememberSaveable { mutableStateOf(-1) }
 
                 fun navigateTo(destination: MainDestination) {
                     currentDestination = destination.name
@@ -97,20 +103,87 @@ class MainActivity : ComponentActivity() {
 
                     MainDestination.Home -> HomeScreenScaffold(
                         modifier = Modifier.fillMaxSize(),
-                        onProfileClick = { navigateTo(MainDestination.ProfileBenhNhan) }
+                        onProfileClick = { navigateTo(MainDestination.ProfileBenhNhan) },
+                        onTicketClick = { navigateTo(MainDestination.TicketList) },
+                        onNotificationClick = { navigateTo(MainDestination.NotificationList) },
+                        onAccountClick = { navigateTo(MainDestination.Account) }
                     )
 
                     MainDestination.ProfileBenhNhan -> ProfileBenhNhanScreen(
                         modifier = Modifier.fillMaxSize(),
                         onBackClick = { navigateTo(MainDestination.Home) },
                         onCreateClick = { /* open sheet only */ },
-                        onRegisterNew = { navigateTo(MainDestination.CreateProfile) }
+                        onRegisterNew = {
+                            selectedPatientIndex = -1
+                            navigateTo(MainDestination.CreateProfile)
+                        },
+                        onDetailClick = { index ->
+                            selectedPatientIndex = index
+                            navigateTo(MainDestination.PatientDetail)
+                        }
                     )
 
                     MainDestination.CreateProfile -> CreateProfileScreen(
                         modifier = Modifier.fillMaxSize(),
                         onBackClick = { navigateTo(MainDestination.ProfileBenhNhan) },
                         onSubmit = { navigateTo(MainDestination.ProfileBenhNhan) }
+                    )
+
+                    MainDestination.PatientDetail -> {
+                        val patient = PatientController.patients.getOrNull(selectedPatientIndex)
+                        PatientDetailScreen(
+                            modifier = Modifier.fillMaxSize(),
+                            patient = patient,
+                            index = selectedPatientIndex,
+                            onBackClick = { navigateTo(MainDestination.ProfileBenhNhan) },
+                            onEditClick = { index ->
+                                if (index >= 0) {
+                                    PatientController.startEditing(index)
+                                    navigateTo(MainDestination.CreateProfile)
+                                }
+                            },
+                            onConfirmClick = { navigateTo(MainDestination.ProfileBenhNhan) },
+                            onDeleteClick = { index ->
+                                PatientController.removePatient(index)
+                                selectedPatientIndex = -1
+                                navigateTo(MainDestination.ProfileBenhNhan)
+                            }
+                        )
+                    }
+
+                    MainDestination.TicketList -> TicketListScreen(
+                        modifier = Modifier.fillMaxSize(),
+                        onBackClick = { navigateTo(MainDestination.Home) },
+                        onHomeClick = { navigateTo(MainDestination.Home) },
+                        onProfileClick = { navigateTo(MainDestination.ProfileBenhNhan) },
+                        onTicketClick = { navigateTo(MainDestination.TicketList) },
+                        onNotificationClick = { navigateTo(MainDestination.NotificationList) },
+                        onAccountClick = { navigateTo(MainDestination.Account) }
+                    )
+
+                    MainDestination.NotificationList -> NotificationListScreen(
+                        modifier = Modifier.fillMaxSize(),
+                        onBackClick = { navigateTo(MainDestination.Home) },
+                        onHomeClick = { navigateTo(MainDestination.Home) },
+                        onProfileClick = { navigateTo(MainDestination.ProfileBenhNhan) },
+                        onTicketClick = { navigateTo(MainDestination.TicketList) },
+                        onNotificationClick = { navigateTo(MainDestination.NotificationList) },
+                        onAccountClick = { navigateTo(MainDestination.Account) }
+                    )
+
+                    MainDestination.Account -> AccountScreen(
+                        modifier = Modifier.fillMaxSize(),
+                        onBackClick = { navigateTo(MainDestination.Home) },
+                        onHomeClick = { navigateTo(MainDestination.Home) },
+                        onProfileClick = { navigateTo(MainDestination.ProfileBenhNhan) },
+                        onTicketClick = { navigateTo(MainDestination.TicketList) },
+                        onNotificationClick = { navigateTo(MainDestination.NotificationList) },
+                        onAccountClick = { navigateTo(MainDestination.Account) },
+                        onLogout = {
+                            selectedPatientIndex = -1
+                            PatientController.clearAll()
+                            navigateTo(MainDestination.Login)
+                        }
                     )
                 }
             }
@@ -128,7 +201,11 @@ private enum class MainDestination {
     PasswordSuccess,
     Home,
     ProfileBenhNhan,
-    CreateProfile
+    CreateProfile,
+    PatientDetail,
+    TicketList,
+    NotificationList,
+    Account
 }
 
 

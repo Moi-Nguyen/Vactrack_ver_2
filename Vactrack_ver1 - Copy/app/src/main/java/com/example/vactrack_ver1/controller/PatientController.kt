@@ -10,7 +10,7 @@ object PatientController {
     private var editingIndex: Int? = null
 
     fun addPatient(p: Patient) {
-        patients.add(0, p) // thêm lên đầu
+        patients.add(0, p) // thêm vào đầu danh sách để hiển thị trước
     }
 
     fun startEditing(index: Int) {
@@ -22,9 +22,21 @@ object PatientController {
     fun applyEdit(updated: Patient) {
         val i = editingIndex
         if (i != null && i in patients.indices) {
-            patients[i] = updated // GHI ĐÈ item cũ
+            patients[i] = updated // ghi đè hồ sơ đang chỉnh sửa
         }
         editingIndex = null
+    }
+
+    fun removePatient(index: Int) {
+        if (index !in patients.indices) return
+        patients.removeAt(index)
+        editingIndex = editingIndex?.let { current ->
+            when {
+                current == index -> null
+                current > index -> current - 1
+                else -> current
+            }
+        }
     }
 
     fun cancelEditing() {
