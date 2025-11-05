@@ -28,6 +28,8 @@ import com.example.vactrack_ver1.view.notification.NotificationListScreen
 import com.example.vactrack_ver1.view.account.AccountScreen
 import com.example.vactrack_ver1.view.profile_benh_nhan.CreateProfileScreen
 import com.example.vactrack_ver1.view.facility.FacilitySelectionScreen
+import com.example.vactrack_ver1.view.facility.HospitalDetailScreen
+import com.example.vactrack_ver1.view.facility.hospitalMockDetails
 
 class MainActivity : ComponentActivity() {
     private val onboardingController = OnboardingController()
@@ -42,6 +44,7 @@ class MainActivity : ComponentActivity() {
                     mutableStateOf(MainDestination.Onboarding.name)
                 }
                 var selectedPatientIndex by rememberSaveable { mutableStateOf(-1) }
+                var selectedHospitalId by rememberSaveable { mutableStateOf<String?>(null) }
 
                 fun navigateTo(destination: MainDestination) {
                     currentDestination = destination.name
@@ -113,7 +116,21 @@ class MainActivity : ComponentActivity() {
 
                     MainDestination.FacilitySelection -> FacilitySelectionScreen(
                         modifier = Modifier.fillMaxSize(),
-                        onBackClick = { navigateTo(MainDestination.Home) }
+                        onBackClick = { navigateTo(MainDestination.Home) },
+                        onDetailClick = { facility ->
+                            facility.detailId?.let { detailId ->
+                                selectedHospitalId = detailId
+                                navigateTo(MainDestination.HospitalDetail)
+                            }
+                        }
+                    )
+
+                    MainDestination.HospitalDetail -> HospitalDetailScreen(
+                        modifier = Modifier.fillMaxSize(),
+                        hospitals = hospitalMockDetails,
+                        initialHospitalId = selectedHospitalId,
+                        onBackClick = { navigateTo(MainDestination.FacilitySelection) },
+                        onBookNowClick = { /* TODO: hook booking flow */ }
                     )
 
                     MainDestination.ProfileBenhNhan -> ProfileBenhNhanScreen(
@@ -208,6 +225,7 @@ private enum class MainDestination {
     PasswordSuccess,
     Home,
     FacilitySelection,
+    HospitalDetail,
     ProfileBenhNhan,
     CreateProfile,
     PatientDetail,

@@ -3,7 +3,6 @@
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -78,52 +77,68 @@ data class FacilityItem(
     val name: String,
     val address: String,
     val type: FacilityCategory,
+    val detailId: String? = null,
     val isSelected: Boolean = false,
-    // ✅ Thêm mapUrl để mở đúng điểm trên Google Maps
-    val mapUrl: String? = null
+    val mapUrl: String? = null // để mở Google Maps
 )
 
+/* ==== Danh sách 7 cơ sở (mapUrl đúng link bạn cung cấp) ==== */
 private val facilitySamples = listOf(
     FacilityItem(
-        "facility_1","Bệnh viện nhân dân Gia Định",
-        "1 Nơ Trang Long, Phường 7, Bình Thạnh, TP. Hồ Chí Minh",
-        FacilityCategory.Hospital, true,
+        id = "facility_gia_dinh",
+        name = "Bệnh viện Nhân Dân Gia Định",
+        address = "1 Nơ Trang Long, Phường 7, Bình Thạnh, TP. Hồ Chí Minh",
+        type = FacilityCategory.Hospital,
+        detailId = "gia_dinh",
+        isSelected = true,
         mapUrl = "https://www.google.com/maps/place/B%E1%BB%87nh+vi%E1%BB%87n+Nh%C3%A2n+d%C3%A2n+Gia+%C4%90%E1%BB%8Bnh/@10.8037471,106.6915639,17z/data=!3m1!4b1!4m6!3m5!1s0x317528c663a9375f:0x342683919bcbff10!8m2!3d10.8037471!4d106.6941388!16s%2Fg%2F1td4m5v2?hl=vi&entry=ttu"
     ),
     FacilityItem(
-        "facility_2","Bệnh viện Quân Y 175",
-        "Nguyễn Kiệm/786, Đ. Hạnh Thông, Phường, Gò Vấp, TP. Hồ Chí Minh",
-        FacilityCategory.Hospital,
+        id = "facility_qy175",
+        name = "Bệnh viện Quân Y 175",
+        address = "786 Nguyễn Kiệm, Gò Vấp, TP. Hồ Chí Minh",
+        type = FacilityCategory.Hospital,
+        detailId = "quan_y_175",
         mapUrl = "https://www.google.com/maps/place/B%E1%BB%87nh+vi%E1%BB%87n+Qu%C3%A2n+Y+175/@10.8175099,106.6757906,17z/data=!3m1!4b1!4m6!3m5!1s0x317528e2324759b7:0x6c91974ff86f05e3!8m2!3d10.8175099!4d106.6806615!16s%2Fg%2F11hbnsy1s7?hl=vi&entry=ttu"
     ),
     FacilityItem(
-        "facility_3","Phòng khám Đa khoa CHAC2",
-        "42 Đặng Văn Bi, Phường, Thủ Đức, Thành phố Hồ Chí Minh",
-        FacilityCategory.Clinic,
-        mapUrl = "https://www.google.com/maps/place/PH%C3%92NG+KH%C3%81M+%C4%90A+KHOA+CHAC2/@10.841446,106.7624721,17z/data=!3m1!4b1!4m6!3m5!1s0x317527a3154f26c3:0xa1a9e078bf4dec54!8m2!3d10.841446!4d106.765047!16s%2Fg%2F11cjj1b7_n?hl=vi&entry=ttu"
-    ),
-    FacilityItem(
-        "facility_4","Bệnh viện Ung bướu TP. HCM",
-        "47 Nguyễn Huy Lượng, Phường 14, Bình Thạnh, TP. Hồ Chí Minh",
-        FacilityCategory.Hospital,
+        id = "facility_ung_buou_hcm",
+        name = "Bệnh viện Ung bướu TP. HCM",
+        address = "47 Nguyễn Huy Lượng, Phường 14, Bình Thạnh, TP. Hồ Chí Minh",
+        type = FacilityCategory.Hospital,
+        detailId = "ung_buou_hcm",
         mapUrl = "https://www.google.com/maps/place/B%E1%BB%87nh+vi%E1%BB%87n+Ung+b%C6%B0%E1%BB%9Bu+TP.+HCM/@10.8049868,106.6917835,17z/data=!3m1!4b1!4m6!3m5!1s0x317528c6b111c081:0x9545c9715dfe2cd7!8m2!3d10.8049868!4d106.6943584!16s%2Fg%2F11c562nv8y?hl=vi&entry=ttu"
     ),
     FacilityItem(
-        "facility_5","Phòng khám đa khoa Hàng Xanh",
-        "395 Điện Biên Phủ, Thạnh Mỹ Tây, Bình Thạnh, TP. Hồ Chí Minh",
-        FacilityCategory.Clinic,
-        mapUrl = "https://www.google.com/maps/place/PH%C3%92NG+KH%C3%81M+%C4%90A+KHOA+H%C3%80NG+XANH/@10.8018403,106.709809,17z/data=!3m1!4b1!4m6!3m5!1s0x317528a52ee28255:0x8cfadae18d6b5dcd!8m2!3d10.8018403!4d106.7123839!16s%2Fg%2F11bccmjy4c?hl=vi&entry=ttu"
-    ),
-    FacilityItem(
-        "facility_6","Bệnh viện Mắt TP. HCM",
-        "280 Điện Biên Phủ, Phường Võ Thị Sáu, Quận 3, Thành phố Hồ Chí Minh",
-        FacilityCategory.Hospital,
+        id = "facility_mat_hcm",
+        name = "Bệnh viện Mắt TP. HCM",
+        address = "280 Điện Biên Phủ, Phường Võ Thị Sáu, Quận 3, TP. Hồ Chí Minh",
+        type = FacilityCategory.Hospital,
+        detailId = "mat_hcm",
         mapUrl = "https://www.google.com/maps/place/B%E1%BB%87nh+vi%E1%BB%87n+M%E1%BA%AFt+TP.+HCM/@10.7783851,106.6827679,17z/data=!3m1!4b1!4m6!3m5!1s0x31752f2579d6bfe9:0x35859d11c9f06b3a!8m2!3d10.7783851!4d106.6853428!16s%2Fg%2F1hc4h557r?hl=vi&entry=ttu"
     ),
     FacilityItem(
-        "facility_7","Phòng khám sản phụ khoa Tâm Phúc",
-        "164 Đ. Nguyễn Xí, Phường 26, Bình Thạnh, TP. Hồ Chí Minh",
-        FacilityCategory.Clinic,
+        id = "facility_chac2",
+        name = "PHÒNG KHÁM ĐA KHOA CHAC2",
+        address = "42 Đặng Văn Bi, TP. Thủ Đức, TP. Hồ Chí Minh",
+        type = FacilityCategory.Clinic,
+        detailId = "chac2",
+        mapUrl = "https://www.google.com/maps/place/PH%C3%92NG+KH%C3%81M+%C4%90A+KHOA+CHAC2/@10.841446,106.7624721,17z/data=!3m1!4b1!4m6!3m5!1s0x317527a3154f26c3:0xa1a9e078bf4dec54!8m2!3d10.841446!4d106.765047!16s%2Fg%2F11cjj1b7_n?hl=vi&entry=ttu"
+    ),
+    FacilityItem(
+        id = "facility_hang_xanh",
+        name = "PHÒNG KHÁM ĐA KHOA HÀNG XANH",
+        address = "395 Điện Biên Phủ, Bình Thạnh, TP. Hồ Chí Minh",
+        type = FacilityCategory.Clinic,
+        detailId = "hang_xanh",
+        mapUrl = "https://www.google.com/maps/place/PH%C3%92NG+KH%C3%81M+%C4%90A+KHOA+H%C3%80NG+XANH/@10.8018403,106.709809,17z/data=!3m1!4b1!4m6!3m5!1s0x317528a52ee28255:0x8cfadae18d6b5dcd!8m2!3d10.8018403!4d106.7123839!16s%2Fg%2F11bccmjy4c?hl=vi&entry=ttu"
+    ),
+    FacilityItem(
+        id = "facility_tam_phuc",
+        name = "Phòng khám sản phụ khoa Tâm Phúc",
+        address = "164 Nguyễn Xí, Phường 26, Bình Thạnh, TP. Hồ Chí Minh",
+        type = FacilityCategory.Clinic,
+        detailId = "tam_phuc",
         mapUrl = "https://www.google.com/maps/place/Ph%C3%B2ng+kh%C3%A1m+s%E1%BA%A3n+ph%E1%BB%A5+khoa+T%C3%A2m+Ph%C3%BAc/@10.8148807,106.7059205,17z/data=!3m1!4b1!4m6!3m5!1s0x317529cd2ba0419f:0xc720403af3e1ba7f!8m2!3d10.8148807!4d106.7084954!16s%2Fg%2F11j3t0krsp?hl=vi&entry=ttu"
     )
 )
@@ -190,32 +205,25 @@ fun FacilitySelectionScreen(
                         expandedFacilityId = if (expandedFacilityId == facility.id) null else facility.id
                     },
                     onDetailClick = {
-                        Toast.makeText(context, "Xem chi tiết", Toast.LENGTH_SHORT).show()
+                        // Không hiển thị Toast nữa, điều hướng thẳng
                         onDetailClick(facility)
                     },
-                    // ✅ Chỉ đổi phần xử lý "Đường đi": mở Google Maps theo mapUrl (fallback ra browser)
                     onDirectionClick = {
                         val deepLink = facility.mapUrl
                             ?: "https://www.google.com/maps/search/?api=1&query=" +
                             Uri.encode("${facility.name} ${facility.address}")
                         val gmmUri = Uri.parse(deepLink)
-
                         val mapsIntent = Intent(Intent.ACTION_VIEW, gmmUri).apply {
-                            // cố gắng mở bằng app Google Maps
                             `package` = "com.google.android.apps.maps"
                         }
                         try {
                             context.startActivity(mapsIntent)
                         } catch (_: ActivityNotFoundException) {
-                            // nếu không có app Maps thì mở bằng trình duyệt
                             context.startActivity(Intent(Intent.ACTION_VIEW, gmmUri))
                         }
-                        onDirectionClick(facility) // giữ callback nếu bạn muốn bắt sự kiện ở nơi khác
+                        onDirectionClick(facility)
                     },
-                    onBookNowClick = {
-                        Toast.makeText(context, "Đặt khám ngay", Toast.LENGTH_SHORT).show()
-                        onBookNowClick(facility)
-                    }
+                    onBookNowClick = { onBookNowClick(facility) }
                 )
             }
         }
@@ -275,7 +283,11 @@ private fun FacilitySearchBar(
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp)),
         placeholder = {
-            Text("Tìm cơ sở y tế", color = TextSecondary.copy(alpha = 0.7f))
+            Text(
+                "Tìm cơ sở y tế",
+                color = TextSecondary.copy(alpha = 0.7f),
+                fontSize = 16.sp
+            )
         },
         leadingIcon = {
             Icon(Icons.Filled.Search, contentDescription = null, tint = PrimaryColor)
@@ -299,7 +311,7 @@ private fun FacilitySearchBar(
     )
 }
 
-/* ==== Filter (to & đều) ==== */
+/* ==== Filter ==== */
 @Composable
 private fun FacilityFilterRow(
     selectedCategory: FacilityCategory,
@@ -339,7 +351,7 @@ private fun FacilityFilterRow(
                         },
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.SemiBold,
-                            fontSize = 15.sp
+                            fontSize = 16.sp
                         )
                     )
                 }
@@ -348,7 +360,7 @@ private fun FacilityFilterRow(
     }
 }
 
-/* ==== Card (nút lazy bằng LazyRow) ==== */
+/* ==== Card ==== */
 @Composable
 private fun FacilityCard(
     facility: FacilityItem,
@@ -397,12 +409,18 @@ private fun FacilityCard(
                     Text(
                         text = facility.name,
                         color = TextPrimary,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 18.sp
+                        )
                     )
                     Text(
                         text = facility.address,
                         color = TextSecondary,
-                        style = MaterialTheme.typography.bodySmall.copy(lineHeight = 18.sp),
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            lineHeight = 18.sp,
+                            fontSize = 14.sp
+                        ),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -435,7 +453,7 @@ private fun FacilityCard(
                                 containerColor = Color.Transparent
                             ),
                             contentPadding = PaddingValues(horizontal = 14.dp)
-                        ) { Text("Xem chi tiết", maxLines = 1) }
+                        ) { Text("Xem chi tiết", maxLines = 1, fontSize = 15.sp) }
                     }
                     item {
                         OutlinedButton(
@@ -448,7 +466,7 @@ private fun FacilityCard(
                                 containerColor = Color.Transparent
                             ),
                             contentPadding = PaddingValues(horizontal = 14.dp)
-                        ) { Text("Đường đi", maxLines = 1) }
+                        ) { Text("Đường đi", maxLines = 1, fontSize = 15.sp) }
                     }
                     item {
                         Button(
@@ -459,7 +477,7 @@ private fun FacilityCard(
                                 containerColor = PrimaryColor, contentColor = Color.White
                             ),
                             contentPadding = PaddingValues(horizontal = 16.dp)
-                        ) { Text("Đặt khám ngay", fontWeight = FontWeight.SemiBold, maxLines = 1) }
+                        ) { Text("Đặt khám ngay", fontWeight = FontWeight.SemiBold, maxLines = 1, fontSize = 15.sp) }
                     }
                 }
             }
