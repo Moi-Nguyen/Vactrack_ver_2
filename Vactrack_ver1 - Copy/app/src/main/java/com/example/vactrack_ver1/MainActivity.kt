@@ -27,6 +27,7 @@ import com.example.vactrack_ver1.view.phieu_kham.TicketListScreen
 import com.example.vactrack_ver1.view.notification.NotificationListScreen
 import com.example.vactrack_ver1.view.account.AccountScreen
 import com.example.vactrack_ver1.view.profile_benh_nhan.CreateProfileScreen
+import com.example.vactrack_ver1.view.facility.FacilitySelectionScreen
 
 class MainActivity : ComponentActivity() {
     private val onboardingController = OnboardingController()
@@ -103,10 +104,16 @@ class MainActivity : ComponentActivity() {
 
                     MainDestination.Home -> HomeScreenScaffold(
                         modifier = Modifier.fillMaxSize(),
+                        onFacilityBookingClick = { navigateTo(MainDestination.FacilitySelection) },
                         onProfileClick = { navigateTo(MainDestination.ProfileBenhNhan) },
                         onTicketClick = { navigateTo(MainDestination.TicketList) },
                         onNotificationClick = { navigateTo(MainDestination.NotificationList) },
                         onAccountClick = { navigateTo(MainDestination.Account) }
+                    )
+
+                    MainDestination.FacilitySelection -> FacilitySelectionScreen(
+                        modifier = Modifier.fillMaxSize(),
+                        onBackClick = { navigateTo(MainDestination.Home) }
                     )
 
                     MainDestination.ProfileBenhNhan -> ProfileBenhNhanScreen(
@@ -200,6 +207,7 @@ private enum class MainDestination {
     NewPassword,
     PasswordSuccess,
     Home,
+    FacilitySelection,
     ProfileBenhNhan,
     CreateProfile,
     PatientDetail,

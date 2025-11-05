@@ -64,7 +64,7 @@ import com.example.vactrack_ver1.ui.theme.Vactrack_ver1Theme
 import com.example.vactrack_ver1.view.components.MainBottomNavItem
 import com.example.vactrack_ver1.view.components.MainBottomNavigationBar
 
-data class QuickAction(val title: String, val icon: Int)
+data class QuickAction(val id: String, val title: String, val icon: Int)
 data class HospitalHighlight(val name: String, val address: String)
 data class DoctorHighlight(val name: String, val speciality: String, val fee: String)
 data class PatientRecord(
@@ -75,14 +75,14 @@ data class PatientRecord(
 )
 
 private val quickActionsSample = listOf(
-    QuickAction("Đặt lịch khám tại cơ sở", R.drawable.img_dat_kham_co_so),
-    QuickAction("Đặt lịch khám chuyên khoa", R.drawable.img_dat_kham_chuyen_khoa),
-    QuickAction("Gọi video với bác sĩ", R.drawable.img_goi_video),
-    QuickAction("Gói sức khỏe toàn diện", R.drawable.img_goi_kham_suc_khoe_toan_dien),
-    QuickAction("Thanh toán viện phí", R.drawable.img_thanh_toan_vien_phi),
-    QuickAction("Đặt khám bác sĩ", R.drawable.img_dat_kham_bac_si),
-    QuickAction("Tra cứu kết quả khám bệnh", R.drawable.img_tra_cuu_ket_qua_kham_benh),
-    QuickAction("Đặt khám 1900-2115", R.drawable.img_dat_kham_1900_2115)
+    QuickAction("facility_booking", "Đặt lịch khám tại cơ sở", R.drawable.img_dat_kham_co_so),
+    QuickAction("specialist_booking", "Đặt lịch khám chuyên khoa", R.drawable.img_dat_kham_chuyen_khoa),
+    QuickAction("video_call", "Gọi video với bác sĩ", R.drawable.img_goi_video),
+    QuickAction("health_package", "Gói sức khỏe toàn diện", R.drawable.img_goi_kham_suc_khoe_toan_dien),
+    QuickAction("bill_payment", "Thanh toán viện phí", R.drawable.img_thanh_toan_vien_phi),
+    QuickAction("doctor_booking", "Đặt khám bác sĩ", R.drawable.img_dat_kham_bac_si),
+    QuickAction("result_lookup", "Tra cứu kết quả khám bệnh", R.drawable.img_tra_cuu_ket_qua_kham_benh),
+    QuickAction("hotline_booking", "Đặt khám 1900-2115", R.drawable.img_dat_kham_1900_2115)
 )
 
 private val hospitalsSample = listOf(
@@ -114,6 +114,7 @@ fun HomeScreenScaffold(
     quickActions: List<QuickAction> = quickActionsSample,
     hospitals: List<HospitalHighlight> = hospitalsSample,
     doctors: List<DoctorHighlight> = doctorsSample,
+    onFacilityBookingClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     onProfileClick: () -> Unit = {},
     onTicketClick: () -> Unit = {},
@@ -164,6 +165,11 @@ fun HomeScreenScaffold(
                 quickActions = quickActions,
                 hospitals = hospitals,
                 doctors = doctors,
+                onQuickActionClick = { action ->
+                    if (action.id == "facility_booking") {
+                        onFacilityBookingClick()
+                    }
+                },
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
@@ -177,6 +183,7 @@ private fun HomeContent(
     quickActions: List<QuickAction>,
     hospitals: List<HospitalHighlight>,
     doctors: List<DoctorHighlight>,
+    onQuickActionClick: (QuickAction) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -184,7 +191,7 @@ private fun HomeContent(
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp)
     ) {
         item { Spacer(modifier = Modifier.height(20.dp)) }
-        item { QuickActionsCard(quickActions) }
+        item { QuickActionsCard(quickActions, onQuickActionClick) }
         item { Spacer(modifier = Modifier.height(28.dp)) }
         item {
             SectionTitle(
@@ -307,7 +314,10 @@ private fun SearchBarTop() {
 }
 
 @Composable
-private fun QuickActionsCard(actions: List<QuickAction>) {
+private fun QuickActionsCard(
+    actions: List<QuickAction>,
+    onActionClick: (QuickAction) -> Unit
+) {
     Surface(
         shape = RoundedCornerShape(28.dp),
         color = Color.White,
@@ -326,7 +336,7 @@ private fun QuickActionsCard(actions: List<QuickAction>) {
                     horizontalArrangement = Arrangement.spacedBy(20.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    row.forEach { action -> QuickActionItem(action) }
+                    row.forEach { action -> QuickActionItem(action, onActionClick) }
                 }
             }
         }
@@ -334,9 +344,16 @@ private fun QuickActionsCard(actions: List<QuickAction>) {
 }
 
 @Composable
-private fun RowScope.QuickActionItem(action: QuickAction) {
+private fun RowScope.QuickActionItem(
+    action: QuickAction,
+    onActionClick: (QuickAction) -> Unit
+) {
     Column(
-        modifier = Modifier.weight(1f),
+        modifier = Modifier
+            .weight(1f)
+            .clip(RoundedCornerShape(24.dp))
+            .clickable { onActionClick(action) }
+            .padding(horizontal = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
