@@ -1,4 +1,4 @@
-package com.example.vactrack_ver1.view.account
+﻿package com.example.vactrack_ver1.view.account
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -20,8 +20,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.Logout
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -66,7 +69,7 @@ fun AccountScreen(
         "Quy định sử dụng",
         "Chính sách bảo mật",
         "Điều khoản dịch vụ",
-        "Xem thông tin sức khoẻ",
+        "Xem thông tin sức khỏe",
         "Đánh giá ứng dụng",
         "Chia sẻ ứng dụng",
         "Một số câu hỏi thường gặp"
@@ -82,10 +85,10 @@ fun AccountScreen(
             contentPadding = PaddingValues(
                 start = 20.dp,
                 end = 20.dp,
-                top = 220.dp,
+                top = 240.dp,
                 bottom = 140.dp
             ),
-            verticalArrangement = Arrangement.spacedBy(28.dp)
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             item {
                 AccountCard(entries = entries)
@@ -99,7 +102,7 @@ fun AccountScreen(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
-                .height(220.dp),
+                .height(240.dp),
             onBackClick = onBackClick,
             onLogoutClick = { showLogoutConfirm = true }
         )
@@ -146,58 +149,64 @@ private fun HeaderSection(
                 .fillMaxSize()
                 .padding(horizontal = 20.dp, vertical = 20.dp)
         ) {
-            androidx.compose.material3.IconButton(
+            IconButton(
                 onClick = onBackClick,
                 modifier = Modifier.align(Alignment.TopStart)
             ) {
-                androidx.compose.material3.Icon(
+                Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Quay lại",
                     tint = Color.White
                 )
             }
 
+            IconButton(
+                onClick = onLogoutClick,
+                modifier = Modifier.align(Alignment.TopEnd)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Logout,
+                    contentDescription = "Đăng xuất",
+                    tint = Color.White
+                )
+            }
+
             Column(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(top = 8.dp),
+                modifier = Modifier.align(Alignment.BottomCenter),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Surface(
                     shape = CircleShape,
-                    color = Color.White,
-                    shadowElevation = 0.dp
+                    color = Color.White.copy(alpha = 0.22f)
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.img_tai_khoan),
-                        contentDescription = "Ảnh đại diện",
-                        modifier = Modifier
-                            .size(110.dp)
-                            .clip(CircleShape)
-                    )
+                    Surface(
+                        shape = CircleShape,
+                        color = Color.White,
+                        modifier = Modifier.padding(8.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.img_tai_khoan),
+                            contentDescription = "Ảnh đại diện",
+                            modifier = Modifier
+                                .size(96.dp)
+                                .clip(CircleShape)
+                        )
+                    }
                 }
                 Text(
-                    text = "Nhóm1",
+                    text = "Nhóm 1",
                     color = Color.White,
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
                     )
                 )
-                Surface(
-                    onClick = onLogoutClick,
-                    shape = RoundedCornerShape(22.dp),
-                    color = Color.White.copy(alpha = 0.24f),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.45f))
-                ) {
-                    Text(
-                        text = "Đăng xuất",
-                        color = Color.White,
-                        modifier = Modifier.padding(horizontal = 26.dp, vertical = 8.dp),
-                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium)
-                    )
-                }
+                Text(
+                    text = "Tài khoản quản trị",
+                    color = Color.White.copy(alpha = 0.85f),
+                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp)
+                )
             }
         }
     }
@@ -216,19 +225,24 @@ private fun AccountCard(entries: List<String>) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp, vertical = 26.dp),
-            verticalArrangement = Arrangement.spacedBy(22.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            Text(
-                text = "Điều khoản và quy định",
-                color = BrandPalette.OceanBlue,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "Điều khoản và quy định",
+                    color = BrandPalette.OceanBlue,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 )
-            )
-            Column(
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
+                Text(
+                    text = "Cập nhật những thông tin quan trọng giúp bạn sử dụng ứng dụng an toàn hơn.",
+                    color = BrandPalette.DeepBlue.copy(alpha = 0.75f),
+                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp)
+                )
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 entries.forEach { item ->
                     AccountItemRow(title = item)
                 }
@@ -263,7 +277,7 @@ private fun AccountItemRow(title: String) {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            androidx.compose.material3.Icon(
+            Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
                 tint = BrandPalette.OceanBlue
@@ -286,8 +300,13 @@ private fun LogoutActionButton(onClick: () -> Unit) {
             contentColor = Color(0xFFD32F2F)
         )
     ) {
+        Icon(
+            imageVector = Icons.Outlined.Logout,
+            contentDescription = null
+        )
+        Spacer(modifier = Modifier.size(8.dp))
         Text(
-            text = "ĐĂNG XUẤT",
+            text = "Đăng xuất",
             style = MaterialTheme.typography.labelLarge.copy(
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold
@@ -316,7 +335,7 @@ private fun LogoutConfirmDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "XÁC NHẬN",
+                    text = "Xác nhận",
                     color = BrandPalette.OceanBlue,
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontSize = 20.sp,
