@@ -1,21 +1,11 @@
-package com.example.vactrack_ver1.view.home
+﻿package com.example.vactrack_ver1.view.home
 
+import android.content.res.Resources
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -29,6 +19,8 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarHalf
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -49,8 +41,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -59,20 +52,32 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.vactrack_ver1.R
+import com.example.vactrack_ver1.controller.PatientController
 import com.example.vactrack_ver1.design.BrandPalette
 import com.example.vactrack_ver1.ui.theme.Vactrack_ver1Theme
 import com.example.vactrack_ver1.view.components.MainBottomNavItem
 import com.example.vactrack_ver1.view.components.MainBottomNavigationBar
+import kotlin.math.floor
+import kotlin.math.max
+import kotlin.math.min
+
+private const val LOGO_LOG_TAG = "LogoLoad"
+
+/* ===================== DATA ===================== */
 
 data class QuickAction(val id: String, val title: String, val icon: Int)
-data class HospitalHighlight(val name: String, val address: String)
-data class DoctorHighlight(val name: String, val speciality: String, val fee: String)
-data class PatientRecord(
+
+/** Logo dùng tên drawable (không kèm .png) + rating để render sao */
+data class HospitalHighlight(
+    val id: String,
     val name: String,
-    val phone: String,
-    val birthDate: String,
-    val address: String
+    val address: String,
+    val logoName: String,
+    val rating: Float
 )
+
+data class DoctorHighlight(val name: String, val speciality: String, val fee: String)
+data class PatientRecord(val name: String, val phone: String, val birthDate: String, val address: String)
 
 private val quickActionsSample = listOf(
     QuickAction("facility_booking", "Đặt lịch khám tại cơ sở", R.drawable.img_dat_kham_co_so),
@@ -85,13 +90,15 @@ private val quickActionsSample = listOf(
     QuickAction("hotline_booking", "Đặt khám 1900-2115", R.drawable.img_dat_kham_1900_2115)
 )
 
+/* Dùng đúng logo badge_* bạn đang có trong res/drawable */
 private val hospitalsSample = listOf(
-    HospitalHighlight("Bệnh viện A", "Quận 1, TP.HCM"),
-    HospitalHighlight("Bệnh viện B", "Quận 2, TP.HCM"),
-    HospitalHighlight("Bệnh viện C", "Quận 3, TP.HCM"),
-    HospitalHighlight("Bệnh viện D", "Quận 4, TP.HCM"),
-    HospitalHighlight("Bệnh viện E", "Quận 5, TP.HCM"),
-    HospitalHighlight("Bệnh viện F", "Quận 6, TP.HCM")
+    HospitalHighlight("gia_dinh",   "Bệnh viện Nhân Dân Gia Định",     "Quận Bình Thạnh, TP.HCM", "badge_gia_dinh",   4.8f),
+    HospitalHighlight("quan_y_175", "Bệnh viện Quân Y 175",            "Quận Gò Vấp, TP.HCM",     "badge_quan_y_175", 4.7f),
+    HospitalHighlight("ung_buou",   "Bệnh viện Ung bướu TP. HCM",      "Quận Bình Thạnh, TP.HCM", "badge_ung_buou",   4.6f),
+    HospitalHighlight("mat_hcm",    "Bệnh viện Mắt TP. HCM",           "Quận 3, TP.HCM",          "badge_mat_hcm",    4.7f),
+    HospitalHighlight("chac2",      "PHÒNG KHÁM ĐA KHOA CHAC2",        "TP. Thủ Đức, TP.HCM",     "badge_chac2",      4.5f),
+    HospitalHighlight("hang_xanh",  "PHÒNG KHÁM ĐA KHOA HÀNG XANH",    "Quận Bình Thạnh, TP.HCM", "badge_hang_xanh",  4.4f),
+    HospitalHighlight("tam_phuc",   "Phòng khám sản phụ khoa Tâm Phúc","Quận Bình Thạnh, TP.HCM", "badge_tam_phuc",   4.8f)
 )
 
 private val doctorsSample = listOf(
@@ -100,14 +107,7 @@ private val doctorsSample = listOf(
     DoctorHighlight("Nguyễn Đức Long", "Bác sĩ nhi khoa", "210.000₫")
 )
 
-private val patientRecordsSample = listOf(
-    PatientRecord(
-        name = "Lê Đức Anh",
-        phone = "0123456789",
-        birthDate = "17/10/2005",
-        address = "02 Võ Oanh, Thạnh Lộc, Quận 12, TP.HCM, Việt Nam"
-    )
-)
+/* ===================== SCREEN ===================== */
 
 @Composable
 fun HomeScreenScaffold(
@@ -122,6 +122,22 @@ fun HomeScreenScaffold(
     onAccountClick: () -> Unit = {}
 ) {
     var showPatientRecords by rememberSaveable { mutableStateOf(false) }
+
+    // Build patient records from PatientController
+    val patientRecords = PatientController.patients.map { p ->
+        val fullAddress = buildString {
+            append(p.addressLine)
+            if (p.ward.isNotBlank()) append(", ${p.ward}")
+            if (p.district.isNotBlank()) append(", ${p.district}")
+            if (p.province.isNotBlank()) append(", ${p.province}")
+        }
+        PatientRecord(
+            name = p.name,
+            phone = p.phone,
+            birthDate = p.birthDate,
+            address = fullAddress
+        )
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -155,7 +171,7 @@ fun HomeScreenScaffold(
     ) { innerPadding ->
         if (showPatientRecords) {
             PatientRecordsScreen(
-                records = patientRecordsSample,
+                records = patientRecords,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
@@ -166,9 +182,7 @@ fun HomeScreenScaffold(
                 hospitals = hospitals,
                 doctors = doctors,
                 onQuickActionClick = { action ->
-                    if (action.id == "facility_booking") {
-                        onFacilityBookingClick()
-                    }
+                    if (action.id == "facility_booking") onFacilityBookingClick()
                 },
                 modifier = Modifier
                     .fillMaxSize()
@@ -193,13 +207,7 @@ private fun HomeContent(
         item { Spacer(modifier = Modifier.height(20.dp)) }
         item { QuickActionsCard(quickActions, onQuickActionClick) }
         item { Spacer(modifier = Modifier.height(28.dp)) }
-        item {
-            SectionTitle(
-                title = "ĐỐI TÁC BỆNH VIỆN TIN TƯỞNG VÀ HỢP TÁC",
-                subtitle = null,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
+        item { SectionTitle("ĐỐI TÁC BỆNH VIỆN TIN TƯỞNG VÀ HỢP TÁC", null, Modifier.fillMaxWidth()) }
         item { Spacer(modifier = Modifier.height(20.dp)) }
         item { HospitalsRow(hospitals = hospitals, modifier = Modifier.fillMaxWidth()) }
         item { Spacer(modifier = Modifier.height(32.dp)) }
@@ -215,6 +223,34 @@ private fun HomeContent(
         item { Spacer(modifier = Modifier.height(32.dp)) }
     }
 }
+
+/* === SectionTitle === */
+@Composable
+private fun SectionTitle(title: String, subtitle: String?, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.Start,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = title,
+            color = BrandPalette.DeepBlue,
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.2.sp
+            )
+        )
+        subtitle?.let {
+            Text(
+                text = it,
+                color = BrandPalette.SlateGrey,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
+}
+
+/* ===================== TOP AREA ===================== */
 
 @Composable
 private fun HomeTopBar() {
@@ -239,9 +275,9 @@ private fun HeaderSection() {
     ) {
         Surface(
             shape = CircleShape,
-            color = BrandPalette.MistWhite,
-            tonalElevation = 4.dp,
-            shadowElevation = 4.dp,
+            color = Color.Transparent,
+            tonalElevation = 0.dp,
+            shadowElevation = 0.dp,
             modifier = Modifier.size(64.dp)
         ) {
             Image(
@@ -269,9 +305,9 @@ private fun HeaderSection() {
 
         Surface(
             shape = CircleShape,
-            color = BrandPalette.MistWhite,
-            tonalElevation = 4.dp,
-            shadowElevation = 4.dp
+            color = Color.Transparent,
+            tonalElevation = 0.dp,
+            shadowElevation = 0.dp
         ) {
             Image(
                 painter = painterResource(id = R.drawable.onboarding_logo),
@@ -312,6 +348,8 @@ private fun SearchBarTop() {
         }
     }
 }
+
+/* ===================== QUICK ACTIONS ===================== */
 
 @Composable
 private fun QuickActionsCard(
@@ -359,19 +397,17 @@ private fun RowScope.QuickActionItem(
     ) {
         Surface(
             shape = CircleShape,
-            color = BrandPalette.MistWhite,
-            tonalElevation = 4.dp,
-            shadowElevation = 4.dp,
+            color = Color.Transparent,
+            tonalElevation = 0.dp,
+            shadowElevation = 0.dp,
             modifier = Modifier.size(56.dp)
         ) {
-            Box(contentAlignment = Alignment.Center) {
-                Image(
-                    painter = painterResource(id = action.icon),
-                    contentDescription = action.title,
-                    modifier = Modifier.size(28.dp),
-                    contentScale = ContentScale.Fit
-                )
-            }
+            Image(
+                painter = painterResource(id = action.icon),
+                contentDescription = action.title,
+                modifier = Modifier.size(28.dp),
+                contentScale = ContentScale.Fit
+            )
         }
         Text(
             text = action.title,
@@ -384,30 +420,7 @@ private fun RowScope.QuickActionItem(
     }
 }
 
-@Composable
-private fun SectionTitle(title: String, subtitle: String?, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.Start,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Text(
-            text = title,
-            color = BrandPalette.DeepBlue,
-            style = MaterialTheme.typography.titleMedium.copy(
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.2.sp
-            )
-        )
-        subtitle?.let {
-            Text(
-                text = it,
-                color = BrandPalette.SlateGrey,
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
-    }
-}
+/* ===================== PARTNER HOSPITALS (ROW) ===================== */
 
 @Composable
 private fun HospitalsRow(
@@ -428,40 +441,59 @@ private fun HospitalsRow(
             horizontalArrangement = Arrangement.spacedBy(24.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            items(hospitals) { hospital ->
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Surface(
-                        shape = CircleShape,
-                        color = BrandPalette.MistWhite,
-                        tonalElevation = 4.dp,
-                        shadowElevation = 4.dp,
-                        modifier = Modifier.size(80.dp)
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.onboarding_logo),
-                            contentDescription = hospital.name,
-                            modifier = Modifier.padding(16.dp),
-                            contentScale = ContentScale.Fit
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = hospital.name,
-                        color = BrandPalette.DeepBlue,
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center
-                    )
-                    Text(
-                        text = hospital.address,
-                        color = BrandPalette.SlateGrey,
-                        style = MaterialTheme.typography.bodySmall,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
+            items(hospitals) { hospital -> HospitalCircleLogoItem(hospital) }
         }
     }
 }
+
+@Composable
+private fun HospitalCircleLogoItem(hospital: HospitalHighlight) {
+    val context = LocalContext.current
+    val resId = resolveDrawableId(context.resources, context.packageName, hospital.logoName)
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Surface(
+            shape = CircleShape,
+            color = Color.Transparent,
+            tonalElevation = 0.dp,
+            shadowElevation = 0.dp,
+            modifier = Modifier.size(88.dp)
+        ) {
+            // Ảnh phủ kín vòng tròn + scale để bù viền trong suốt
+            Image(
+                painter = painterResource(id = resId),
+                contentDescription = hospital.name,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+                    .graphicsLayer {
+                        scaleX = 1.5f
+                        scaleY = 1.5f
+                    },
+                contentScale = ContentScale.Crop
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = hospital.name,
+            color = BrandPalette.DeepBlue,
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            text = hospital.address,
+            color = BrandPalette.SlateGrey,
+            style = MaterialTheme.typography.bodySmall,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+/* ===================== BANNER ===================== */
 
 @Composable
 private fun BannerCard() {
@@ -503,6 +535,8 @@ private fun BannerCard() {
     }
 }
 
+/* ===================== HOSPITAL CARDS (CƠ SỞ Y TẾ) ===================== */
+
 @Composable
 private fun HospitalHighlightsSection(hospitals: List<HospitalHighlight>) {
     LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -512,6 +546,9 @@ private fun HospitalHighlightsSection(hospitals: List<HospitalHighlight>) {
 
 @Composable
 private fun HospitalCard(hospital: HospitalHighlight) {
+    val context = LocalContext.current
+    val logoRes = resolveDrawableId(context.resources, context.packageName, hospital.logoName)
+
     Card(
         shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -527,23 +564,43 @@ private fun HospitalCard(hospital: HospitalHighlight) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.onboarding_logo),
-                contentDescription = hospital.name,
-                modifier = Modifier.size(72.dp),
-                contentScale = ContentScale.Fit
-            )
+            Surface(
+                shape = CircleShape,
+                color = Color.Transparent,
+                tonalElevation = 0.dp,
+                shadowElevation = 0.dp,
+                modifier = Modifier.size(96.dp)
+            ) {
+                Image(
+                    painter = painterResource(id = logoRes),
+                    contentDescription = hospital.name,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
+                        .graphicsLayer {
+                            scaleX = 1.5f
+                            scaleY = 1.5f
+                        },
+                    contentScale = ContentScale.Crop
+                )
+            }
             Text(
                 text = hospital.name,
                 color = BrandPalette.DeepBlue,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
             )
             Text(
                 text = hospital.address,
                 color = BrandPalette.SlateGrey,
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
-            RatingBar()
+            RatingBar(rating = hospital.rating)
             Button(
                 onClick = { },
                 modifier = Modifier.fillMaxWidth(),
@@ -560,18 +617,27 @@ private fun HospitalCard(hospital: HospitalHighlight) {
 }
 
 @Composable
-private fun RatingBar() {
+private fun RatingBar(rating: Float) {
+    // Clamp rating 0..5 để tránh lỗi
+    val r = min(5f, max(0f, rating))
+    val full = floor(r).toInt()
+    val half = if ((r - full) >= 0.5f) 1 else 0
+    val empty = 5 - full - half
+
     Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-        repeat(5) {
-            Icon(
-                imageVector = Icons.Filled.Star,
-                contentDescription = null,
-                tint = Color(0xFFFFC107),
-                modifier = Modifier.size(14.dp)
-            )
+        repeat(full) {
+            Icon(Icons.Filled.Star, null, tint = Color(0xFFFFC107), modifier = Modifier.size(14.dp))
+        }
+        repeat(half) {
+            Icon(Icons.Filled.StarHalf, null, tint = Color(0xFFFFC107), modifier = Modifier.size(14.dp))
+        }
+        repeat(empty) {
+            Icon(Icons.Outlined.Star, null, tint = Color(0x33FFC107), modifier = Modifier.size(14.dp))
         }
     }
 }
+
+/* ===================== DOCTORS ===================== */
 
 @Composable
 private fun DoctorHighlightsSection(doctors: List<DoctorHighlight>) {
@@ -599,9 +665,9 @@ private fun DoctorCard(doctor: DoctorHighlight) {
         ) {
             Surface(
                 shape = CircleShape,
-                color = BrandPalette.MistWhite,
-                tonalElevation = 4.dp,
-                shadowElevation = 4.dp
+                color = Color.Transparent,
+                tonalElevation = 0.dp,
+                shadowElevation = 0.dp
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.onboarding_logo),
@@ -643,6 +709,8 @@ private fun DoctorCard(doctor: DoctorHighlight) {
         }
     }
 }
+
+/* ===================== PATIENT RECORDS ===================== */
 
 @Composable
 private fun PatientRecordsTopBar(
@@ -702,11 +770,26 @@ private fun PatientRecordsScreen(
     records: List<PatientRecord>,
     modifier: Modifier = Modifier
 ) {
-    LazyColumn(
-        modifier = modifier.padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
-        items(records) { record -> PatientRecordCard(record) }
+    if (records.isEmpty()) {
+        // Empty state
+        Box(
+            modifier = modifier,
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "Chưa có hồ sơ bệnh nhân",
+                color = Color.Gray,
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center
+            )
+        }
+    } else {
+        LazyColumn(
+            modifier = modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            items(records) { record -> PatientRecordCard(record) }
+        }
     }
 }
 
@@ -766,7 +849,7 @@ private fun PatientRecordCard(
 
 @Composable
 private fun RecordRow(
-    icon: ImageVector,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     value: String
 ) {
     Row(
@@ -786,6 +869,21 @@ private fun RecordRow(
             style = MaterialTheme.typography.bodyMedium
         )
     }
+}
+
+/* ===================== UTILS ===================== */
+
+private fun resolveDrawableId(
+    resources: Resources,
+    packageName: String,
+    name: String
+): Int {
+    val id = resources.getIdentifier(name, "drawable", packageName)
+    if (id == 0) {
+        Log.e(LOGO_LOG_TAG, "Không tìm thấy drawable: $name — fallback onboarding_logo")
+        return R.drawable.onboarding_logo
+    }
+    return id
 }
 
 @Preview(showBackground = true, widthDp = 360, heightDp = 800)

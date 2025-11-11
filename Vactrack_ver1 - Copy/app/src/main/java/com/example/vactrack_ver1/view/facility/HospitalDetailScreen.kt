@@ -26,6 +26,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.rounded.StarHalf
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -55,10 +57,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.vactrack_ver1.R
 import com.example.vactrack_ver1.ui.theme.Vactrack_ver1Theme
+import kotlin.math.floor
+import kotlin.math.max
 import java.util.Locale
 
 /* ==== Theme tokens ==== */
@@ -298,6 +303,8 @@ private fun HeaderSection(
     val heroImageRes = remember(imageName) { resolveDrawableId(resources, context.packageName, imageName) }
     val badgeLogoRes = remember(badge) { resolveOptionalDrawableId(resources, context.packageName, badge) }
 
+    val ratingValue = remember(ratingText) { parseRatingValue(ratingText) }
+
     Surface(
         color = PrimaryColor,
         tonalElevation = 4.dp,
@@ -412,11 +419,11 @@ private fun HeaderSection(
                         }
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = hospitalName,
-                            color = Color.White,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
+                    Text(
+                        text = hospitalName,
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
                                 fontSize = 20.sp,
                                 lineHeight = 24.sp
                             ),
@@ -428,15 +435,13 @@ private fun HeaderSection(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            repeat(5) {
-                                Icon(
-                                    imageVector = Icons.Filled.Star,
-                                    contentDescription = null,
-                                    tint = Color(0xFFFFC107),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
+                            RatingStars(
+                                rating = ratingValue,
+                                iconSize = 20.dp,
+                                fullColor = Color(0xFFFFC107),
+                                emptyColor = Color.White.copy(alpha = 0.35f)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
                             Text(
                                 text = ratingText,
                                 color = Color.White,
@@ -801,6 +806,52 @@ private fun GuideBlock(text: String) {
     }
 }
 
+@Composable
+private fun RatingStars(
+    rating: Float,
+    modifier: Modifier = Modifier,
+    maxRating: Int = 5,
+    iconSize: Dp = 18.dp,
+    fullColor: Color = Color(0xFFFFC107),
+    emptyColor: Color = fullColor.copy(alpha = 0.35f)
+) {
+    val clampedRating = rating.coerceIn(0f, maxRating.toFloat())
+    val fullStars = floor(clampedRating).toInt().coerceIn(0, maxRating)
+    val hasHalf = (clampedRating - fullStars) >= 0.5f && fullStars < maxRating
+    val emptyStars = max(0, maxRating - fullStars - if (hasHalf) 1 else 0)
+
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        repeat(fullStars) {
+            Icon(
+                imageVector = Icons.Filled.Star,
+                contentDescription = null,
+                tint = fullColor,
+                modifier = Modifier.size(iconSize)
+            )
+        }
+        if (hasHalf) {
+            Icon(
+                imageVector = Icons.Rounded.StarHalf,
+                contentDescription = null,
+                tint = fullColor,
+                modifier = Modifier.size(iconSize)
+            )
+        }
+        repeat(emptyStars) {
+            Icon(
+                imageVector = Icons.Outlined.Star,
+                contentDescription = null,
+                tint = emptyColor,
+                modifier = Modifier.size(iconSize)
+            )
+        }
+    }
+}
+
 /* ==== Bottom fixed button ==== */
 @Composable
 private fun BookNowBar(onClick: () -> Unit) {
@@ -836,6 +887,11 @@ private fun BookNowBar(onClick: () -> Unit) {
             }
         }
     }
+}
+
+private fun parseRatingValue(text: String): Float {
+    val match = Regex("[0-9]+([.,][0-9]+)?").find(text)?.value ?: return 0f
+    return match.replace(',', '.').toFloatOrNull() ?: 0f
 }
 
 /* ==== Utils ==== */
