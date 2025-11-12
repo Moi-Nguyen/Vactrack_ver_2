@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -13,9 +14,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
@@ -50,6 +55,7 @@ import androidx.compose.ui.unit.sp
 import com.example.vactrack_ver1.R
 import com.example.vactrack_ver1.design.BrandPalette
 import com.example.vactrack_ver1.ui.theme.Vactrack_ver1Theme
+import com.example.vactrack_ver1.view.utils.*
 
 @Composable
 fun LoginScreen(
@@ -67,50 +73,58 @@ fun LoginScreen(
     val demoEmail = "admin"
     val demoPassword = "1"
 
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .background(Color.White)
-            .padding(horizontal = 24.dp, vertical = 16.dp)
     ) {
+        val maxContentWidth = getMaxContentWidth()
+        val horizontalPadding = responsiveHorizontalPadding()
+        val spacingMedium = responsiveSpacingMedium()
+        val spacingLarge = responsiveSpacingLarge()
+        
         Column(
             modifier = Modifier
+                .fillMaxSize()
+                .widthIn(max = maxContentWidth)
                 .align(Alignment.Center)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = horizontalPadding, vertical = spacingMedium),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             Image(
                 painter = painterResource(id = R.drawable.onboarding_wordmark),
                 contentDescription = "VacTrack wordmark",
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp)
-                    .height(120.dp),
+                    .fillMaxWidth(0.8f)
+                    .sizeIn(maxHeight = 120.dp),
                 contentScale = ContentScale.Fit
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(spacingLarge))
 
             Text(
                 text = "Sign in to your account",
                 color = BrandPalette.DeepBlue,
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.SemiBold
-                )
+                ),
+                textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(spacingLarge))
 
             SocialRow(
                 onFacebook = onFacebook,
                 onGoogle = onGoogle
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(spacingMedium))
 
             DividerRow()
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(spacingMedium))
 
             AuthTextField(
                 value = email,
