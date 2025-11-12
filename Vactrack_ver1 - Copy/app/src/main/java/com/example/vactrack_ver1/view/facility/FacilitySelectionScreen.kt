@@ -62,6 +62,8 @@ import androidx.compose.ui.unit.sp
 import com.example.vactrack_ver1.R
 import com.example.vactrack_ver1.ui.theme.Vactrack_ver1Theme
 import java.util.Locale
+import androidx.compose.foundation.lazy.itemsIndexed
+
 
 /* ==== Theme tokens ==== */
 private val PrimaryColor = Color(0xFF66C3DA)
@@ -196,7 +198,10 @@ fun FacilitySelectionScreen(
                     modifier = Modifier.padding(horizontal = 20.dp)
                 )
             }
-            items(filteredFacilities, key = { it.id }) { facility ->
+            itemsIndexed(
+                items = filteredFacilities,
+                key = { index, _ -> "facility_item_$index" }
+            ) { _, facility ->
                 FacilityCard(
                     facility = facility,
                     modifier = Modifier.padding(horizontal = 20.dp),
@@ -234,7 +239,10 @@ fun FacilitySelectionScreen(
 @Composable
 private fun FacilitySelectionHeader(onBackClick: () -> Unit) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            // Added statusBarsPadding() and padding(top = 20.dp) to move the top bar down slightly
+            .padding(top = 20.dp),
         color = PrimaryColor,
         contentColor = Color.White,
         shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp),
