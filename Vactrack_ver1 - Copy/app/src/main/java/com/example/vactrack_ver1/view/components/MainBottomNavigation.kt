@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.vactrack_ver1.R
 import com.example.vactrack_ver1.design.BrandPalette
@@ -121,23 +122,29 @@ private fun MainBottomNavButton(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp), // FIXED: Added consistent vertical padding for all items
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Surface(shape = CircleShape, color = Color.Transparent) {
-            Image(
-                painter = painterResource(id = iconRes),
-                contentDescription = title,
-                modifier = Modifier.size(28.dp),
-                contentScale = ContentScale.Fit,
-                colorFilter = ColorFilter.tint(iconColor)
-            )
-        }
+        // FIXED: Removed Surface wrapper to ensure consistent icon alignment
+        // All icons now use the same size (24.dp) and contentScale for perfect alignment
+        Image(
+            painter = painterResource(id = iconRes),
+            contentDescription = title,
+            modifier = Modifier
+                .size(24.dp) // FIXED: Standardized icon size to 24.dp for all items including "Phiếu khám"
+                .padding(2.dp), // FIXED: Added inner padding for balanced spacing
+            contentScale = ContentScale.Fit,
+            colorFilter = ColorFilter.tint(iconColor)
+        )
+        
         Text(
             text = title,
             color = iconColor,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium)
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
+            textAlign = TextAlign.Center, // FIXED: Center-align text for consistent label positioning
+            maxLines = 1 // FIXED: Prevent label wrapping that could cause misalignment
         )
     }
 }
