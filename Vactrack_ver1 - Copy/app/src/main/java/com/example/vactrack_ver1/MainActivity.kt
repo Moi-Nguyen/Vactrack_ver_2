@@ -28,10 +28,22 @@ import com.example.vactrack_ver1.view.notification.NotificationListScreen
 import com.example.vactrack_ver1.view.account.AccountScreen
 import com.example.vactrack_ver1.view.profile_benh_nhan.CreateProfileScreen
 import com.example.vactrack_ver1.view.facility.FacilitySelectionScreen
+import com.example.vactrack_ver1.view.facility.FacilityItem
+import com.example.vactrack_ver1.view.facility.FacilityCategory
 import com.example.vactrack_ver1.view.facility.HospitalDetailScreen
 import com.example.vactrack_ver1.view.facility.hospitalMockDetails
 import com.example.vactrack_ver1.view.booking.BookingInformationScreen
 import com.example.vactrack_ver1.view.booking.SelectPatientScreen
+import com.example.vactrack_ver1.view.booking.ConfirmBookingScreen
+import com.example.vactrack_ver1.view.booking.PaymentSuccessScreen
+import com.example.vactrack_ver1.view.specialty.SpecialtySelectionScreen
+import com.example.vactrack_ver1.controller.Ticket
+import com.example.vactrack_ver1.controller.TicketController
+import com.example.vactrack_ver1.controller.TicketStatus
+import com.example.vactrack_ver1.model.Specialty
+import com.example.vactrack_ver1.model.specialtiesByHospitalId
+import com.example.vactrack_ver1.model.getSpecialtyNameById
+import com.example.vactrack_ver1.view.phieu_kham.TicketFilter
 
 class MainActivity : ComponentActivity() {
     private val onboardingController = OnboardingController()
@@ -48,6 +60,15 @@ class MainActivity : ComponentActivity() {
                 var selectedPatientIndex by rememberSaveable { mutableStateOf(-1) }
                 var selectedHospitalId by rememberSaveable { mutableStateOf<String?>(null) }
                 var bookingHospitalId by rememberSaveable { mutableStateOf<String?>(null) }
+                var selectedSpecialtyId by rememberSaveable { mutableStateOf<String?>(null) }
+                var selectedTicketTab by rememberSaveable { mutableStateOf(TicketFilter.Paid) }
+                
+                // Booking confirmation data
+                var bookingSpecialty by rememberSaveable { mutableStateOf("") }
+                var bookingService by rememberSaveable { mutableStateOf("") }
+                var bookingClinic by rememberSaveable { mutableStateOf("") }
+                var bookingDate by rememberSaveable { mutableStateOf("") }
+                var bookingTime by rememberSaveable { mutableStateOf("") }
 
                 fun navigateTo(destination: MainDestination) {
                     currentDestination = destination.name
@@ -111,8 +132,26 @@ class MainActivity : ComponentActivity() {
                     MainDestination.Home -> HomeScreenScaffold(
                         modifier = Modifier.fillMaxSize(),
                         onFacilityBookingClick = { navigateTo(MainDestination.FacilitySelection) },
+                        onSpecialtyBookingClick = { navigateTo(MainDestination.SpecialtySelection) },
+                        onTicketUnpaidClick = {
+                            selectedTicketTab = TicketFilter.Unpaid
+                            navigateTo(MainDestination.TicketList)
+                        },
+                        onTicketPaidClick = {
+                            selectedTicketTab = TicketFilter.Paid
+                            navigateTo(MainDestination.TicketList)
+                        },
+                        onHospitalBookNowClick = { hospital ->
+                            // Set the hospital ID for booking
+                            bookingHospitalId = hospital.id
+                            // Navigate directly to booking information screen
+                            navigateTo(MainDestination.BookingInformation)
+                        },
                         onProfileClick = { navigateTo(MainDestination.ProfileBenhNhan) },
-                        onTicketClick = { navigateTo(MainDestination.TicketList) },
+                        onTicketClick = { 
+                            selectedTicketTab = TicketFilter.Paid
+                            navigateTo(MainDestination.TicketList) 
+                        },
                         onNotificationClick = { navigateTo(MainDestination.NotificationList) },
                         onAccountClick = { navigateTo(MainDestination.Account) }
                     )
@@ -143,21 +182,149 @@ class MainActivity : ComponentActivity() {
                         }
                     )
 
-                    MainDestination.BookingInformation -> BookingInformationScreen(
+                    MainDestination.SpecialtySelection -> SpecialtySelectionScreen(
                         modifier = Modifier.fillMaxSize(),
-                        hospitalId = bookingHospitalId,
-                        onBackClick = { navigateTo(MainDestination.FacilitySelection) },
-                        onContinueClick = {
-                            navigateTo(MainDestination.SelectPatient)
+                        onBackClick = { navigateTo(MainDestination.Home) },
+                        onSpecialtySelected = { specialty ->
+                            // Save selected specialty and filter hospitals
+                            selectedSpecialtyId = specialty.id
+                            navigateTo(MainDestination.SpecialtyHospitals)
                         }
                     )
+
+                    MainDestination.SpecialtyHospitals -> {
+                        // Filter hospitals that offer the selected specialty
+                        val hospitalsForSpecialty = if (selectedSpecialtyId != null) {
+                            hospitalMockDetails.filter { hospital ->
+                                val supportedSpecialties = specialtiesByHospitalId[hospital.id] ?: emptyList()
+                                selectedSpecialtyId in supportedSpecialties
+                            }
+                        } else {
+                            hospitalMockDetails
+                        }
+
+                        // Convert HospitalDetail to FacilityItem with unique IDs
+                        val facilitiesForSpecialty = hospitalsForSpecialty.mapIndexed { index, hospital ->
+                            FacilityItem(
+                                id = "facility_${hospital.id}_$index",
+                                name = hospital.name,
+                                address = hospital.subtitle,
+                                type = FacilityCategory.Hospital,
+                                detailId = hospital.id,
+                                isSelected = false,
+                                mapUrl = null
+                            )
+                        }
+
+                        FacilitySelectionScreen(
+                            modifier = Modifier.fillMaxSize(),
+                            facilities = facilitiesForSpecialty,
+                            onBackClick = { navigateTo(MainDestination.SpecialtySelection) },
+                            onDetailClick = { facility ->
+                                facility.detailId?.let { detailId ->
+                                    selectedHospitalId = detailId
+                                    navigateTo(MainDestination.HospitalDetail)
+                                }
+                            },
+                            onBookNowClick = { facility ->
+                                bookingHospitalId = facility.detailId
+                                // Continue to booking with specialty pre-selected
+                                navigateTo(MainDestination.BookingInformation)
+                            }
+                        )
+                    }
+
+                    MainDestination.BookingInformation -> {
+                        // Convert specialty ID to name for pre-selection
+                        val preselectedSpecialtyName = selectedSpecialtyId?.let { getSpecialtyNameById(it) }
+                        
+                        BookingInformationScreen(
+                            modifier = Modifier.fillMaxSize(),
+                            hospitalId = bookingHospitalId,
+                            preselectedSpecialtyName = preselectedSpecialtyName,
+                            onBackClick = { 
+                                // Navigate back to previous screen based on flow
+                                if (selectedSpecialtyId != null) {
+                                    navigateTo(MainDestination.SpecialtyHospitals)
+                                } else {
+                                    navigateTo(MainDestination.FacilitySelection)
+                                }
+                            },
+                            onContinueClick = { specialty, service, clinic, date, time ->
+                                // Save booking data
+                                bookingSpecialty = specialty
+                                bookingService = service
+                                bookingClinic = clinic
+                                bookingDate = date
+                                bookingTime = time
+                                navigateTo(MainDestination.SelectPatient)
+                            }
+                        )
+                    }
 
                     MainDestination.SelectPatient -> SelectPatientScreen(
                         modifier = Modifier.fillMaxSize(),
                         onBackClick = { navigateTo(MainDestination.BookingInformation) },
-                        onContinueClick = {
-                            // TODO: Navigate to next step (confirmation/payment)
-                            navigateTo(MainDestination.ProfileBenhNhan)
+                        onContinueClick = { patientIndex ->
+                            selectedPatientIndex = patientIndex
+                            navigateTo(MainDestination.ConfirmBooking)
+                        }
+                    )
+
+                    MainDestination.ConfirmBooking -> {
+                        val hospital = hospitalMockDetails.find { it.id == bookingHospitalId }
+                        val patient = PatientController.patients.getOrNull(selectedPatientIndex)
+                        val hospitalName = hospital?.name ?: "Trung tâm y tế"
+                        val hospitalAddress = hospital?.address ?: ""
+                        val patientName = patient?.name ?: ""
+                        val fee = 300000L // TODO: Calculate actual fee
+                        
+                        ConfirmBookingScreen(
+                            modifier = Modifier.fillMaxSize(),
+                            hospitalName = hospitalName,
+                            hospitalAddress = hospitalAddress,
+                            patientName = patientName,
+                            doctorName = null, // TODO: Add doctor selection if needed
+                            specialtyName = bookingSpecialty,
+                            serviceName = bookingService,
+                            clinicName = bookingClinic,
+                            visitDate = bookingDate,
+                            visitTime = bookingTime,
+                            fee = fee,
+                            onBackClick = { navigateTo(MainDestination.SelectPatient) },
+                            onContinueClick = {
+                                // Optional: can be used for other flows
+                                navigateTo(MainDestination.Home)
+                            },
+                            onPayClick = {
+                                // Save ticket when payment succeeds
+                                TicketController.addPaidTicket(
+                                    Ticket(
+                                        id = System.currentTimeMillis().toString(),
+                                        hospitalName = hospitalName,
+                                        hospitalAddress = hospitalAddress,
+                                        patientName = patientName,
+                                        specialtyName = bookingSpecialty,
+                                        serviceName = bookingService,
+                                        clinicName = bookingClinic,
+                                        visitDate = bookingDate,
+                                        visitTime = bookingTime,
+                                        fee = fee,
+                                        createdAt = System.currentTimeMillis(),
+                                        status = TicketStatus.PAID
+                                    )
+                                )
+                                // Navigate to payment success screen
+                                navigateTo(MainDestination.PaymentSuccess)
+                            }
+                        )
+                    }
+
+                    MainDestination.PaymentSuccess -> PaymentSuccessScreen(
+                        modifier = Modifier.fillMaxSize(),
+                        onBackClick = {
+                            // Return to home after successful payment
+                            navigateTo(MainDestination.Home)
                         }
                     )
 
@@ -205,6 +372,7 @@ class MainActivity : ComponentActivity() {
 
                     MainDestination.TicketList -> TicketListScreen(
                         modifier = Modifier.fillMaxSize(),
+                        initialTab = selectedTicketTab,
                         onBackClick = { navigateTo(MainDestination.Home) },
                         onHomeClick = { navigateTo(MainDestination.Home) },
                         onProfileClick = { navigateTo(MainDestination.ProfileBenhNhan) },
@@ -254,8 +422,12 @@ private enum class MainDestination {
     Home,
     FacilitySelection,
     HospitalDetail,
+    SpecialtySelection,
+    SpecialtyHospitals,
     BookingInformation,
     SelectPatient,
+    ConfirmBooking,
+    PaymentSuccess,
     ProfileBenhNhan,
     CreateProfile,
     PatientDetail,
