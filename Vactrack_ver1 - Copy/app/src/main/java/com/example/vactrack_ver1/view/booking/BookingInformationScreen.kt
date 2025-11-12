@@ -35,8 +35,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -252,8 +254,9 @@ private val timeSlots = listOf(
 fun BookingInformationScreen(
     modifier: Modifier = Modifier,
     hospitalId: String?,
+    preselectedSpecialtyName: String? = null,
     onBackClick: () -> Unit = {},
-    onContinueClick: () -> Unit = {}
+    onContinueClick: (specialty: String, service: String, clinic: String, date: String, time: String) -> Unit = { _, _, _, _, _ -> }
 ) {
     // Find the hospital from the mock data
     val hospital = hospitalMockDetails.firstOrNull { it.id == hospitalId }
@@ -267,6 +270,16 @@ fun BookingInformationScreen(
     var selectedClinic by rememberSaveable { mutableStateOf("") }
     var selectedDate by rememberSaveable { mutableStateOf("") }
     var selectedTime by rememberSaveable { mutableStateOf("") }
+    
+    // Pre-select specialty if provided from specialty selection flow
+    LaunchedEffect(preselectedSpecialtyName, hospitalSpecialties) {
+        if (selectedSpecialty.isEmpty() && preselectedSpecialtyName != null) {
+            // Check if this hospital supports the preselected specialty
+            if (hospitalSpecialties.contains(preselectedSpecialtyName)) {
+                selectedSpecialty = preselectedSpecialtyName
+            }
+        }
+    }
     
     // Get available clinics for selected specialty
     val availableClinics = remember(selectedSpecialty) {
@@ -295,7 +308,15 @@ fun BookingInformationScreen(
         },
         bottomBar = {
             BottomContinueButton(
-                onClick = onContinueClick,
+                onClick = {
+                    onContinueClick(
+                        selectedSpecialty,
+                        selectedService,
+                        selectedClinic,
+                        selectedDate,
+                        selectedTime
+                    )
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(BackgroundColor)
@@ -425,6 +446,8 @@ private fun StepHeaderWithAppBar(
         modifier = Modifier
             .fillMaxWidth()
             .background(PrimaryBlue)
+            // Added statusBarsPadding() and padding(top = 20.dp) to move the top bar down slightly
+            .padding(top = 20.dp)
     ) {
         // App Bar
         Box(
@@ -798,7 +821,7 @@ private fun BookingInformationScreenPreview() {
         BookingInformationScreen(
             hospitalId = "gia_dinh",
             onBackClick = {},
-            onContinueClick = {}
+            onContinueClick = { _, _, _, _, _ -> }
         )
     }
 }
