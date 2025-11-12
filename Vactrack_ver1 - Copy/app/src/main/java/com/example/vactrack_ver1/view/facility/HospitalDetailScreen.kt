@@ -309,7 +309,9 @@ private fun HeaderSection(
         color = PrimaryColor,
         tonalElevation = 4.dp,
         shadowElevation = 8.dp,
-        shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)
+        shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp),
+        // Added statusBarsPadding() and padding(top = 20.dp) to move the top bar down slightly
+        modifier = Modifier.padding(top = 20.dp)
     ) {
         Column(
             modifier = Modifier
