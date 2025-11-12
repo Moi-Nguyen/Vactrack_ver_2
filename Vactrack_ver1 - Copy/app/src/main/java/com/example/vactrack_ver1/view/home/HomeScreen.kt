@@ -1,7 +1,11 @@
 ﻿package com.example.vactrack_ver1.view.home
 
+import android.content.Context
+import android.content.Intent
 import android.content.res.Resources
+import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -9,8 +13,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -19,7 +28,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.StarHalf
+import androidx.compose.material.icons.automirrored.filled.StarHalf
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -57,9 +66,12 @@ import com.example.vactrack_ver1.design.BrandPalette
 import com.example.vactrack_ver1.ui.theme.Vactrack_ver1Theme
 import com.example.vactrack_ver1.view.components.MainBottomNavItem
 import com.example.vactrack_ver1.view.components.MainBottomNavigationBar
+import com.example.vactrack_ver1.view.utils.*
 import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
+import androidx.compose.foundation.lazy.itemsIndexed
+
 
 private const val LOGO_LOG_TAG = "LogoLoad"
 
@@ -77,7 +89,7 @@ data class HospitalHighlight(
 )
 
 data class DoctorHighlight(val name: String, val speciality: String, val fee: String)
-data class PatientRecord(val name: String, val phone: String, val birthDate: String, val address: String)
+private data class PatientRecord(val name: String, val phone: String, val birthDate: String, val address: String)
 
 private val quickActionsSample = listOf(
     QuickAction("facility_booking", "Đặt lịch khám tại cơ sở", R.drawable.img_dat_kham_co_so),
@@ -115,6 +127,10 @@ fun HomeScreenScaffold(
     hospitals: List<HospitalHighlight> = hospitalsSample,
     doctors: List<DoctorHighlight> = doctorsSample,
     onFacilityBookingClick: () -> Unit = {},
+    onSpecialtyBookingClick: () -> Unit = {},
+    onTicketUnpaidClick: () -> Unit = {},
+    onTicketPaidClick: () -> Unit = {},
+    onHospitalBookNowClick: (HospitalHighlight) -> Unit = {}, // New callback for hospital booking
     modifier: Modifier = Modifier,
     onProfileClick: () -> Unit = {},
     onTicketClick: () -> Unit = {},
@@ -122,6 +138,7 @@ fun HomeScreenScaffold(
     onAccountClick: () -> Unit = {}
 ) {
     var showPatientRecords by rememberSaveable { mutableStateOf(false) }
+    val context = LocalContext.current
 
     // Build patient records from PatientController
     val patientRecords = PatientController.patients.map { p ->
@@ -147,8 +164,6 @@ fun HomeScreenScaffold(
                     onBackClick = { showPatientRecords = false },
                     onCreateClick = { /* TODO */ }
                 )
-            } else {
-                HomeTopBar()
             }
         },
         bottomBar = {
@@ -167,7 +182,7 @@ fun HomeScreenScaffold(
                 onAccountClick = onAccountClick
             )
         },
-        containerColor = Color.White
+        containerColor = Color(0xFFF3F9FF)
     ) { innerPadding ->
         if (showPatientRecords) {
             PatientRecordsScreen(
@@ -182,8 +197,56 @@ fun HomeScreenScaffold(
                 hospitals = hospitals,
                 doctors = doctors,
                 onQuickActionClick = { action ->
-                    if (action.id == "facility_booking") onFacilityBookingClick()
+                    when (action.id) {
+                        // Navigate to facility booking
+                        "facility_booking" -> onFacilityBookingClick()
+                        
+                        // Navigate to specialty booking
+                        "specialist_booking" -> onSpecialtyBookingClick()
+                        
+                        // Show "coming soon" for video call
+                        "video_call" -> {
+                            Toast.makeText(
+                                context,
+                                "Tính năng sẽ được phát triển trong các phiên bản tiếp theo.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        
+                        // Show "coming soon" for health package
+                        "health_package" -> {
+                            Toast.makeText(
+                                context,
+                                "Tính năng sẽ được phát triển trong các phiên bản tiếp theo.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        
+                        // Navigate to ticket list (Unpaid tab)
+                        "bill_payment" -> onTicketUnpaidClick()
+                        
+                        // Show "coming soon" for doctor booking
+                        "doctor_booking" -> {
+                            Toast.makeText(
+                                context,
+                                "Tính năng sẽ được phát triển trong các phiên bản tiếp theo.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        
+                        // Navigate to ticket list (Paid tab)
+                        "result_lookup" -> onTicketPaidClick()
+                        
+                        // Open phone dialer with hotline number
+                        "hotline_booking" -> {
+                            val intent = Intent(Intent.ACTION_DIAL).apply {
+                                data = Uri.parse("tel:19002115")
+                            }
+                            context.startActivity(intent)
+                        }
+                    }
                 },
+                onHospitalBookNowClick = onHospitalBookNowClick,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
@@ -198,29 +261,36 @@ private fun HomeContent(
     hospitals: List<HospitalHighlight>,
     doctors: List<DoctorHighlight>,
     onQuickActionClick: (QuickAction) -> Unit,
+    onHospitalBookNowClick: (HospitalHighlight) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val horizontalPadding = responsiveHorizontalPadding()
+    val spacingSmall = responsiveSpacingSmall()
+    val spacingMedium = responsiveSpacingMedium()
+    val spacingLarge = responsiveSpacingLarge()
+    
     LazyColumn(
         modifier = modifier,
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp)
+        contentPadding = PaddingValues(horizontal = horizontalPadding, vertical = spacingMedium)
     ) {
-        item { Spacer(modifier = Modifier.height(20.dp)) }
+        item { HeaderSection() }
+        item { Spacer(modifier = Modifier.height(spacingMedium)) }
+        item { SearchBarTop() }
+        item { Spacer(modifier = Modifier.height(spacingMedium)) }
         item { QuickActionsCard(quickActions, onQuickActionClick) }
-        item { Spacer(modifier = Modifier.height(28.dp)) }
+        item { Spacer(modifier = Modifier.height(spacingLarge)) }
         item { SectionTitle("ĐỐI TÁC BỆNH VIỆN TIN TƯỞNG VÀ HỢP TÁC", null, Modifier.fillMaxWidth()) }
-        item { Spacer(modifier = Modifier.height(20.dp)) }
-        item { HospitalsRow(hospitals = hospitals, modifier = Modifier.fillMaxWidth()) }
-        item { Spacer(modifier = Modifier.height(32.dp)) }
-        item { BannerCard() }
-        item { Spacer(modifier = Modifier.height(32.dp)) }
+        item { Spacer(modifier = Modifier.height(spacingSmall)) }
+        item { PartnerHospitalsCard(hospitals = hospitals, modifier = Modifier.fillMaxWidth()) }
+        item { Spacer(modifier = Modifier.height(spacingLarge)) }
         item { SectionTitle("CƠ SỞ Y TẾ", "Đặt khám nhiều nhất") }
-        item { Spacer(modifier = Modifier.height(16.dp)) }
-        item { HospitalHighlightsSection(hospitals) }
-        item { Spacer(modifier = Modifier.height(32.dp)) }
+        item { Spacer(modifier = Modifier.height(spacingMedium)) }
+        item { HospitalHighlightsSection(hospitals, onHospitalBookNowClick) }
+        item { Spacer(modifier = Modifier.height(spacingLarge)) }
         item { SectionTitle("BÁC SĨ TƯ VẤN", "Khám bệnh qua video") }
-        item { Spacer(modifier = Modifier.height(16.dp)) }
+        item { Spacer(modifier = Modifier.height(spacingMedium)) }
         item { DoctorHighlightsSection(doctors) }
-        item { Spacer(modifier = Modifier.height(32.dp)) }
+        item { Spacer(modifier = Modifier.height(spacingLarge)) }
     }
 }
 
@@ -253,43 +323,24 @@ private fun SectionTitle(title: String, subtitle: String?, modifier: Modifier = 
 /* ===================== TOP AREA ===================== */
 
 @Composable
-private fun HomeTopBar() {
-    Surface(color = Color.White) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            HeaderSection()
-            SearchBarTop()
-        }
-    }
-}
-
-@Composable
 private fun HeaderSection() {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Surface(
-            shape = CircleShape,
-            color = Color.Transparent,
-            tonalElevation = 0.dp,
-            shadowElevation = 0.dp,
-            modifier = Modifier.size(64.dp)
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.onboarding_logo),
-                contentDescription = "Logo ứng dụng",
-                modifier = Modifier.padding(14.dp),
-                contentScale = ContentScale.Fit
-            )
-        }
+        // Left logo
+        Image(
+            painter = painterResource(id = R.drawable.onboarding_logo),
+            contentDescription = "Logo ứng dụng",
+            modifier = Modifier
+                .size(56.dp)
+                .clip(CircleShape),
+            contentScale = ContentScale.Fit
+        )
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(12.dp))
 
+        // Center greeting
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = "Vactrack xin chào!",
@@ -303,46 +354,42 @@ private fun HeaderSection() {
             )
         }
 
-        Surface(
-            shape = CircleShape,
-            color = Color.Transparent,
-            tonalElevation = 0.dp,
-            shadowElevation = 0.dp
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.onboarding_logo),
-                contentDescription = "Ảnh đại diện",
-                modifier = Modifier.size(48.dp),
-                contentScale = ContentScale.Fit
-            )
-        }
+        // Right avatar
+        Image(
+            painter = painterResource(id = R.drawable.onboarding_logo),
+            contentDescription = "Ảnh đại diện",
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape),
+            contentScale = ContentScale.Fit
+        )
     }
 }
 
 @Composable
 private fun SearchBarTop() {
-    Surface(
+    Card(
         shape = RoundedCornerShape(30.dp),
-        color = Color.White,
-        tonalElevation = 6.dp,
-        shadowElevation = 6.dp,
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 12.dp),
+                .padding(horizontal = 20.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Icon(
                 imageVector = Icons.Filled.Search,
                 contentDescription = "Tìm kiếm",
-                tint = BrandPalette.OceanBlue
+                tint = BrandPalette.OceanBlue,
+                modifier = Modifier.size(24.dp)
             )
             Text(
                 text = "Tìm CSYT/ bác sĩ/ chuyên khoa/ dịch vụ",
-                color = BrandPalette.SlateGrey.copy(alpha = 0.7f),
+                color = BrandPalette.SlateGrey.copy(alpha = 0.65f),
                 style = MaterialTheme.typography.bodyMedium
             )
         }
@@ -356,112 +403,116 @@ private fun QuickActionsCard(
     actions: List<QuickAction>,
     onActionClick: (QuickAction) -> Unit
 ) {
-    Surface(
+    val gridColumns = responsiveGridColumns(compactColumns = 4)
+    val cardPadding = responsiveSpacingMedium()
+    
+    Card(
         shape = RoundedCornerShape(28.dp),
-        color = Color.White,
-        tonalElevation = 6.dp,
-        shadowElevation = 6.dp
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Column(
+        // FIXED: LazyVerticalGrid inside LazyColumn item needs bounded height
+        // Using .height() instead of .heightIn() to avoid infinite constraints
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(gridColumns),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 24.dp, horizontal = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+                .height(260.dp),  // Fixed height to avoid infinite constraints
+            contentPadding = PaddingValues(cardPadding),
+            horizontalArrangement = Arrangement.spacedBy(responsiveSpacingSmall()),
+            verticalArrangement = Arrangement.spacedBy(responsiveSpacingMedium())
         ) {
-            actions.chunked(4).forEach { row ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(20.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    row.forEach { action -> QuickActionItem(action, onActionClick) }
-                }
+            items(actions) { action ->
+                QuickActionItem(
+                    action = action,
+                    onActionClick = onActionClick
+                )
             }
         }
     }
 }
 
 @Composable
-private fun RowScope.QuickActionItem(
+private fun QuickActionItem(
     action: QuickAction,
     onActionClick: (QuickAction) -> Unit
 ) {
+    val iconSize = responsiveIconSize(baseSize = 40.dp)
+    
     Column(
         modifier = Modifier
-            .weight(1f)
-            .clip(RoundedCornerShape(24.dp))
+            .fillMaxWidth()
             .clickable { onActionClick(action) }
-            .padding(horizontal = 4.dp),
+            .padding(vertical = responsiveSpacingSmall()),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(responsiveSpacingSmall())
     ) {
-        Surface(
-            shape = CircleShape,
-            color = Color.Transparent,
-            tonalElevation = 0.dp,
-            shadowElevation = 0.dp,
-            modifier = Modifier.size(56.dp)
-        ) {
-            Image(
-                painter = painterResource(id = action.icon),
-                contentDescription = action.title,
-                modifier = Modifier.size(28.dp),
-                contentScale = ContentScale.Fit
-            )
-        }
+        Image(
+            painter = painterResource(id = action.icon),
+            contentDescription = action.title,
+            modifier = Modifier.size(iconSize),
+            contentScale = ContentScale.Fit
+        )
+        
         Text(
             text = action.title,
             color = BrandPalette.SlateGrey,
             style = MaterialTheme.typography.bodySmall,
             textAlign = TextAlign.Center,
             maxLines = 2,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }
 
-/* ===================== PARTNER HOSPITALS (ROW) ===================== */
+/* ===================== PARTNER HOSPITALS ===================== */
 
 @Composable
-private fun HospitalsRow(
+private fun PartnerHospitalsCard(
     hospitals: List<HospitalHighlight>,
     modifier: Modifier = Modifier
 ) {
     Surface(
-        modifier = modifier,
         shape = RoundedCornerShape(28.dp),
         color = Color.White,
         tonalElevation = 6.dp,
-        shadowElevation = 6.dp
+        shadowElevation = 6.dp,
+        modifier = modifier
     ) {
         LazyRow(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(24.dp),
+                .padding(horizontal = responsiveSpacingMedium(), vertical = responsiveSpacingMedium()),
+            horizontalArrangement = Arrangement.spacedBy(responsiveSpacingLarge()),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            items(hospitals) { hospital -> HospitalCircleLogoItem(hospital) }
+            items(hospitals, key = { it.id }) { hospital ->
+                PartnerHospitalItem(hospital)
+            }
         }
     }
 }
 
 @Composable
-private fun HospitalCircleLogoItem(hospital: HospitalHighlight) {
+private fun PartnerHospitalItem(hospital: HospitalHighlight) {
     val context = LocalContext.current
-    val resId = resolveDrawableId(context.resources, context.packageName, hospital.logoName)
+    val logoRes = resolveDrawableId(context.resources, context.packageName, hospital.logoName)
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.widthIn(min = 110.dp, max = 140.dp)
+    ) {
         Surface(
             shape = CircleShape,
             color = Color.Transparent,
             tonalElevation = 0.dp,
             shadowElevation = 0.dp,
-            modifier = Modifier.size(88.dp)
+            modifier = Modifier.size(72.dp)
         ) {
-            // Ảnh phủ kín vòng tròn + scale để bù viền trong suốt
             Image(
-                painter = painterResource(id = resId),
+                painter = painterResource(id = logoRes),
                 contentDescription = hospital.name,
                 modifier = Modifier
                     .fillMaxSize()
@@ -473,13 +524,13 @@ private fun HospitalCircleLogoItem(hospital: HospitalHighlight) {
                 contentScale = ContentScale.Crop
             )
         }
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(Modifier.height(8.dp))
         Text(
             text = hospital.name,
             color = BrandPalette.DeepBlue,
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
         Text(
@@ -493,124 +544,128 @@ private fun HospitalCircleLogoItem(hospital: HospitalHighlight) {
     }
 }
 
-/* ===================== BANNER ===================== */
+/* ===================== HOSPITAL CARDS (CƠ SỞ Y TẾ) ===================== */
 
 @Composable
-private fun BannerCard() {
-    Surface(
-        shape = RoundedCornerShape(28.dp),
-        color = Color.White,
-        tonalElevation = 6.dp,
-        shadowElevation = 6.dp
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.img_caring_for_life),
-                contentDescription = "Banner chăm sóc sức khỏe",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp)),
-                contentScale = ContentScale.Crop
+private fun HospitalHighlightsSection(
+    hospitals: List<HospitalHighlight>,
+    onBookNowClick: (HospitalHighlight) -> Unit = {}
+) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        itemsIndexed(
+            items = hospitals,
+            key = { index, _ -> "hospital_card_$index" }
+        ) { _, hospital ->
+            HospitalCard(
+                hospital = hospital,
+                onBookNowClick = { onBookNowClick(hospital) }
             )
-            Button(
-                onClick = { },
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-                shape = RoundedCornerShape(20.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = BrandPalette.OceanBlue,
-                    contentColor = Color.White
-                )
-            ) {
-                Text(
-                    text = "Dịch vụ của chúng tôi",
-                    style = MaterialTheme.typography.labelLarge.copy(fontSize = 14.sp)
-                )
-            }
         }
     }
 }
 
-/* ===================== HOSPITAL CARDS (CƠ SỞ Y TẾ) ===================== */
-
 @Composable
-private fun HospitalHighlightsSection(hospitals: List<HospitalHighlight>) {
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        items(hospitals) { hospital -> HospitalCard(hospital) }
-    }
-}
-
-@Composable
-private fun HospitalCard(hospital: HospitalHighlight) {
+private fun HospitalCard(
+    hospital: HospitalHighlight,
+    onBookNowClick: () -> Unit = {}
+) {
     val context = LocalContext.current
     val logoRes = resolveDrawableId(context.resources, context.packageName, hospital.logoName)
+    val cardWidth = when (getWindowSize()) {
+        WindowSize.COMPACT -> 180.dp
+        WindowSize.MEDIUM -> 220.dp
+        WindowSize.EXPANDED -> 260.dp
+    }
+    val logoSize = when (getWindowSize()) {
+        WindowSize.COMPACT -> 72.dp
+        WindowSize.MEDIUM -> 88.dp
+        WindowSize.EXPANDED -> 96.dp
+    }
 
     Card(
         shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         modifier = Modifier
-            .width(210.dp)
-            .height(220.dp)
+            .width(cardWidth)
+            .wrapContentHeight()
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .fillMaxWidth()
+                .padding(responsiveSpacingMedium()),
+            verticalArrangement = Arrangement.spacedBy(responsiveSpacingSmall()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Surface(
-                shape = CircleShape,
-                color = Color.Transparent,
-                tonalElevation = 0.dp,
-                shadowElevation = 0.dp,
-                modifier = Modifier.size(96.dp)
-            ) {
-                Image(
-                    painter = painterResource(id = logoRes),
-                    contentDescription = hospital.name,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape)
-                        .graphicsLayer {
-                            scaleX = 1.5f
-                            scaleY = 1.5f
-                        },
-                    contentScale = ContentScale.Crop
-                )
-            }
+            // Circular logo
+            Image(
+                painter = painterResource(id = logoRes),
+                contentDescription = hospital.name,
+                modifier = Modifier
+                    .size(logoSize)
+                    .clip(CircleShape)
+                    .graphicsLayer {
+                        scaleX = 1.5f
+                        scaleY = 1.5f
+                    },
+                contentScale = ContentScale.Crop
+            )
+            
+            Spacer(modifier = Modifier.height(responsiveSpacingSmall()))
+            
+            // Hospital name
             Text(
                 text = hospital.name,
                 color = BrandPalette.DeepBlue,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Bold
+                ),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp)
             )
+            
+            // Address
             Text(
                 text = hospital.address,
                 color = BrandPalette.SlateGrey,
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp)
             )
+            
+            // Rating
             RatingBar(rating = hospital.rating)
+            
+            Spacer(modifier = Modifier.height(responsiveSpacingSmall()))
+            
+            // Button
             Button(
-                onClick = { },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp),
+                onClick = onBookNowClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 40.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = BrandPalette.OceanBlue,
                     contentColor = Color.White
-                )
+                ),
+                contentPadding = PaddingValues(vertical = 8.dp, horizontal = 12.dp)
             ) {
-                Text(text = "Đặt khám ngay", fontSize = 12.sp)
+                Text(
+                    text = "Đặt khám ngay",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
@@ -629,7 +684,7 @@ private fun RatingBar(rating: Float) {
             Icon(Icons.Filled.Star, null, tint = Color(0xFFFFC107), modifier = Modifier.size(14.dp))
         }
         repeat(half) {
-            Icon(Icons.Filled.StarHalf, null, tint = Color(0xFFFFC107), modifier = Modifier.size(14.dp))
+            Icon(Icons.AutoMirrored.Filled.StarHalf, null, tint = Color(0xFFFFC107), modifier = Modifier.size(14.dp))
         }
         repeat(empty) {
             Icon(Icons.Outlined.Star, null, tint = Color(0x33FFC107), modifier = Modifier.size(14.dp))
@@ -642,7 +697,12 @@ private fun RatingBar(rating: Float) {
 @Composable
 private fun DoctorHighlightsSection(doctors: List<DoctorHighlight>) {
     LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        items(doctors) { doctor -> DoctorCard(doctor) }
+        itemsIndexed(
+            items = doctors,
+            key = { index, _ -> "doctor_card_$index" }
+        ) { _, doctor ->
+            DoctorCard(doctor)
+        }
     }
 }
 
@@ -653,58 +713,78 @@ private fun DoctorCard(doctor: DoctorHighlight) {
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         modifier = Modifier
-            .width(210.dp)
-            .height(230.dp)
+            .width(200.dp)
+            .height(240.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Surface(
-                shape = CircleShape,
-                color = Color.Transparent,
-                tonalElevation = 0.dp,
-                shadowElevation = 0.dp
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.onboarding_logo),
-                    contentDescription = doctor.name,
-                    modifier = Modifier.size(72.dp),
-                    contentScale = ContentScale.Fit
-                )
-            }
+            // Doctor avatar
+            Image(
+                painter = painterResource(id = R.drawable.onboarding_logo),
+                contentDescription = doctor.name,
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Fit
+            )
+            
+            // Doctor name
             Text(
                 text = doctor.name,
                 color = BrandPalette.DeepBlue,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp
+                ),
                 textAlign = TextAlign.Center,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 16.sp
             )
+            
+            // Specialty
             Text(
                 text = doctor.speciality,
                 color = BrandPalette.SlateGrey,
-                style = MaterialTheme.typography.bodySmall,
-                textAlign = TextAlign.Center
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
+            
+            // Fee
             Text(
                 text = doctor.fee,
                 color = BrandPalette.DeepBlue,
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 13.sp
+                )
             )
+            
+            Spacer(modifier = Modifier.weight(1f))
+            
+            // Button
             Button(
                 onClick = { },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = BrandPalette.OceanBlue,
                     contentColor = Color.White
-                )
+                ),
+                contentPadding = PaddingValues(vertical = 10.dp)
             ) {
-                Text(text = "Tư vấn ngay", fontSize = 12.sp)
+                Text(
+                    text = "Tư vấn ngay",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
     }
@@ -788,7 +868,12 @@ private fun PatientRecordsScreen(
             modifier = modifier.padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            items(records) { record -> PatientRecordCard(record) }
+            itemsIndexed(
+                items = records,
+                key = { index, _ -> "patient_record_$index" }
+            ) { _, record ->
+                PatientRecordCard(record)
+            }
         }
     }
 }
