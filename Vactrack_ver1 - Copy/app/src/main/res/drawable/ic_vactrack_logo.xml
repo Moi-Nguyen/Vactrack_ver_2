@@ -1,0 +1,56 @@
+<!-- app/src/main/res/drawable/ic_vactrack_logo.xml -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Circular background badge -->
+    <path
+        android:fillColor="#2F80ED"
+        android:pathData="M54,54m-42,0a42,42 0,1 1,84 0a42,42 0,1 1,-84 0" />
+    
+    <!-- Shield outline (white) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,28
+                         L68,32
+                         Q70,32 70,34
+                         L70,50
+                         Q70,62 54,72
+                         Q38,62 38,50
+                         L38,34
+                         Q38,32 40,32
+                         Z" />
+    
+    <!-- Shield inner fill (light blue) -->
+    <path
+        android:fillColor="#E3F2FD"
+        android:pathData="M54,31
+                         L66,34
+                         Q67.5,34 67.5,35.5
+                         L67.5,50
+                         Q67.5,60 54,68.5
+                         Q40.5,60 40.5,50
+                         L40.5,35.5
+                         Q40.5,34 42,34
+                         Z" />
+    
+    <!-- Medical cross - vertical bar -->
+    <path
+        android:fillColor="#2F80ED"
+        android:pathData="M51,40
+                         L57,40
+                         L57,62
+                         L51,62
+                         Z" />
+    
+    <!-- Medical cross - horizontal bar -->
+    <path
+        android:fillColor="#2F80ED"
+        android:pathData="M46,48
+                         L62,48
+                         L62,54
+                         L46,54
+                         Z" />
+</vector>

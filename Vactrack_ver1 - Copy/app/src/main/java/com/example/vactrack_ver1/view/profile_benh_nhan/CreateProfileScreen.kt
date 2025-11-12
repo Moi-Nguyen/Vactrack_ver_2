@@ -26,7 +26,54 @@ import androidx.compose.ui.unit.sp
 import com.example.vactrack_ver1.design.BrandPalette
 import com.example.vactrack_ver1.ui.theme.Vactrack_ver1Theme
 import com.example.vactrack_ver1.controller.PatientController
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
+/**
+ * Formats raw digit input into dd/MM/yyyy format.
+ * User types only digits (e.g. 03011990) and slashes are auto-inserted.
+ *
+ * @param raw The raw input string from the TextField
+ * @return Formatted string with slashes at positions 2 and 5 (e.g. "03/01/1990")
+ */
+private fun formatDobInput(raw: String): String {
+    // Keep only digits, limit to 8 digits max
+    val digitsOnly = raw.filter { it.isDigit() }.take(8)
+    
+    return buildString {
+        digitsOnly.forEachIndexed { index, char ->
+            // Insert '/' after day (position 2) and month (position 4)
+            if (index == 2 || index == 4) {
+                append('/')
+            }
+            append(char)
+        }
+    }
+}
+
+/**
+ * Validates if the formatted date string is a valid date.
+ *
+ * @param formatted The formatted date string (should be dd/MM/yyyy)
+ * @return true if the string is exactly 10 characters and represents a valid date, false otherwise
+ */
+private fun isValidDob(formatted: String): Boolean {
+    // Only validate when we have a complete date string
+    if (formatted.length != 10) return false
+    
+    return try {
+        val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        dateFormat.isLenient = false // Strict parsing - rejects invalid dates like 32/01/2000
+        val parsedDate = dateFormat.parse(formatted)
+        
+        // Optional: Check that the date is not in the future
+        val today = Date()
+        parsedDate != null && !parsedDate.after(today)
+    } catch (e: Exception) {
+        false
+    }
+}
 @Composable
 fun CreateProfileScreen(
     modifier: Modifier = Modifier,
@@ -88,7 +135,10 @@ fun CreateProfileScreen(
         }
     }
 
-    val dobValid = birthDate.matches(Regex("^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/[0-9]{4}$"))
+    // Updated DOB validation: only show error when input is complete but invalid
+    val dobValid = isValidDob(birthDate)
+    val dobShouldShowError = birthDate.length == 10 && !dobValid
+    
     val requiredValid =
         fullName.isNotBlank() && dobValid && gender.isNotBlank() && nationalId.isNotBlank() &&
                 nationality.isNotBlank() && province.isNotBlank() && district.isNotBlank() &&
@@ -145,14 +195,19 @@ fun CreateProfileScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        // DOB field with auto-formatting
                         LabeledField(
                             label = "Ngày sinh",
                             required = true,
                             value = birthDate,
-                            onValueChange = { birthDate = it },
+                            onValueChange = { newValue ->
+                                // Auto-format the input: digits only, insert slashes automatically
+                                birthDate = formatDobInput(newValue)
+                            },
                             placeholder = "dd/mm/yyyy",
                             keyboardType = KeyboardType.Number,
-                            isError = birthDate.isNotEmpty() && !dobValid,
+                            isError = dobShouldShowError,
+                            supportingText = "Định dạng ngày sinh phải là dd/mm/yyyy",
                             modifier = Modifier.weight(1f)
                         )
                         LabeledField(
@@ -267,6 +322,7 @@ private fun LabeledField(
     placeholder: String,
     keyboardType: KeyboardType = KeyboardType.Text,
     isError: Boolean = false,
+    supportingText: String? = null,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -294,11 +350,17 @@ private fun LabeledField(
                 cursorColor = BrandPalette.OceanBlue,
                 focusedContainerColor = Color.White,
                 unfocusedContainerColor = Color.White
-            )
+            ),
+            supportingText = if (supportingText != null) {
+                {
+                    Text(
+                        text = supportingText,
+                        color = if (isError) Color(0xFFD32F2F) else Color(0xFF666666),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            } else null
         )
-        if (isError) {
-            Text("Định dạng ngày sinh phải là dd/mm/yyyy", color = Color(0xFFD32F2F), style = MaterialTheme.typography.bodySmall)
-        }
     }
 }
 

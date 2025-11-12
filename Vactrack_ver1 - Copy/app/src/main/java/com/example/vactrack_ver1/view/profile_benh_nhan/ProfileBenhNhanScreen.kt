@@ -83,7 +83,12 @@ fun ProfileBenhNhanScreen(
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                Surface(color = BrandPalette.OceanBlue, shadowElevation = 6.dp) {
+                // FIXED: Added 20.dp top padding to move the top bar down from status bar
+                Surface(
+                    color = BrandPalette.OceanBlue,
+                    shadowElevation = 6.dp,
+                    modifier = Modifier.padding(top = 20.dp) // FIXED: 20dp spacing from top edge
+                ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

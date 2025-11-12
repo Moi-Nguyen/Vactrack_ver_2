@@ -14,9 +14,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -39,14 +42,32 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import com.example.vactrack_ver1.R
+import com.example.vactrack_ver1.controller.Ticket
+import com.example.vactrack_ver1.controller.TicketController
+import com.example.vactrack_ver1.controller.TicketStatus
 import com.example.vactrack_ver1.design.BrandPalette
 import com.example.vactrack_ver1.ui.theme.Vactrack_ver1Theme
 import com.example.vactrack_ver1.view.components.MainBottomNavItem
 import com.example.vactrack_ver1.view.components.MainBottomNavigationBar
+import java.text.NumberFormat
+import java.util.Locale
+
+/* ==== Theme tokens (matching booking screens) ==== */
+private val PrimaryBlue = Color(0xFF5BB7CF)
+private val TextPrimary = Color(0xFF1F2937)
+private val TextSecondary = Color(0xFF6B7280)
+
+/* ==== Helper function to format currency ==== */
+private fun formatCurrency(amount: Long): String {
+    val locale = Locale.forLanguageTag("vi-VN")
+    val formatter = NumberFormat.getNumberInstance(locale)
+    return "${formatter.format(amount)}đ"
+}
 
 @Composable
 fun TicketListScreen(
     modifier: Modifier = Modifier,
+    initialTab: TicketFilter = TicketFilter.Paid,
     onBackClick: () -> Unit = {},
     onHomeClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
@@ -54,13 +75,26 @@ fun TicketListScreen(
     onNotificationClick: () -> Unit = {},
     onAccountClick: () -> Unit = {}
 ) {
-    var selectedTab by rememberSaveable { mutableStateOf(TicketFilter.Paid) }
+    var selectedTab by rememberSaveable { mutableStateOf(initialTab) }
+    val allTickets = TicketController.tickets
+    
+    // Filter tickets based on selected tab
+    val filteredTickets = when (selectedTab) {
+        TicketFilter.Paid -> allTickets.filter { it.status == TicketStatus.PAID }
+        TicketFilter.Unpaid -> allTickets.filter { it.status == TicketStatus.PENDING }
+        TicketFilter.Completed -> allTickets.filter { it.status == TicketStatus.PAID } // For now, same as paid
+    }
 
     Surface(modifier = modifier.fillMaxSize(), color = Color(0xFFF2F8FF)) {
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                Surface(color = BrandPalette.OceanBlue, shadowElevation = 6.dp) {
+                // FIXED: Added 20.dp top padding to move the top bar down from status bar
+                Surface(
+                    color = BrandPalette.OceanBlue,
+                    shadowElevation = 6.dp,
+                    modifier = Modifier.padding(top = 20.dp) // 20dp spacing from top edge
+                ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -113,41 +147,178 @@ fun TicketListScreen(
                     onSelect = { selectedTab = it }
                 )
                 Spacer(modifier = Modifier.height(24.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                
+                // Display tickets or empty state
+                if (filteredTickets.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.img_phieu_kham_trong),
-                            contentDescription = "Không có phiếu khám",
-                            modifier = Modifier.size(160.dp),
-                            colorFilter = ColorFilter.tint(BrandPalette.OceanBlue)
-                        )
-                        Text(
-                            text = "Bạn chưa có phiếu khám nào",
-                            color = BrandPalette.OceanBlue,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 18.sp
-                            ),
-                            textAlign = TextAlign.Center
-                        )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.img_phieu_kham_trong),
+                                contentDescription = "Không có phiếu khám",
+                                modifier = Modifier.size(160.dp),
+                                colorFilter = ColorFilter.tint(BrandPalette.OceanBlue)
+                            )
+                            Text(
+                                text = "Bạn chưa có phiếu khám nào",
+                                color = BrandPalette.OceanBlue,
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 18.sp
+                                ),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(bottom = 16.dp)
+                    ) {
+                        items(filteredTickets) { ticket ->
+                            TicketCard(ticket = ticket)
+                        }
                     }
                 }
+                
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
 }
 
-private enum class TicketFilter {
+enum class TicketFilter {
     Paid, Unpaid, Completed
+}
+
+@Composable
+private fun TicketCard(ticket: Ticket) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Top row: hospital + status
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = ticket.hospitalName,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    ),
+                    color = PrimaryBlue,
+                    modifier = Modifier.weight(1f)
+                )
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color(0xFFDCFCE7)
+                ) {
+                    Text(
+                        text = when (ticket.status) {
+                            TicketStatus.PAID -> "ĐÃ THANH TOÁN"
+                            TicketStatus.PENDING -> "CHỜ THANH TOÁN"
+                            TicketStatus.CANCELLED -> "ĐÃ HỦY"
+                        },
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = Color(0xFF16A34A),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            }
+
+            Text(
+                text = ticket.hospitalAddress,
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                color = TextSecondary,
+                lineHeight = 18.sp
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Patient info
+            Text(
+                text = "Bệnh nhân: ${ticket.patientName}",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold
+                ),
+                color = TextPrimary
+            )
+
+            // Specialty
+            Text(
+                text = "Chuyên khoa: ${ticket.specialtyName}",
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                color = TextSecondary
+            )
+
+            // Service
+            Text(
+                text = "Dịch vụ: ${ticket.serviceName}",
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                color = TextSecondary
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Date and time
+            Text(
+                text = "Thời gian: ${ticket.visitDate} (${ticket.visitTime})",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                ),
+                color = TextPrimary
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Fee row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Tiền khám",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
+                    color = TextSecondary
+                )
+                Text(
+                    text = formatCurrency(ticket.fee),
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = PrimaryBlue
+                )
+            }
+        }
+    }
 }
 
 @Composable

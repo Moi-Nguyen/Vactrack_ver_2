@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -14,6 +15,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,6 +49,7 @@ import com.example.vactrack_ver1.design.BrandPalette
 import com.example.vactrack_ver1.model.OnboardingPage
 import com.example.vactrack_ver1.ui.theme.Vactrack_ver1Theme
 import com.example.vactrack_ver1.view.onboarding.components.VacTrackBackground
+import com.example.vactrack_ver1.view.utils.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -80,11 +84,14 @@ fun OnboardingScreen(
         controller.onNextPage(withWrap = true)
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .background(BrandPalette.MistWhite)
     ) {
+        val horizontalPadding = responsiveHorizontalPadding()
+        val verticalPadding = responsiveVerticalPadding()
+        
         VacTrackBackground(
             modifier = Modifier
                 .fillMaxSize()
@@ -94,11 +101,13 @@ fun OnboardingScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 28.dp, vertical = 40.dp),
+                .widthIn(max = getMaxContentWidth())
+                .align(Alignment.Center)
+                .padding(horizontal = horizontalPadding, vertical = verticalPadding),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(responsiveSpacingSmall()))
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier
@@ -113,7 +122,7 @@ fun OnboardingScreen(
 
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(20.dp),
+                verticalArrangement = Arrangement.spacedBy(responsiveSpacingMedium()),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 DotsIndicator(
@@ -158,30 +167,36 @@ private fun WelcomeSlide(
     page: OnboardingPage,
     modifier: Modifier = Modifier
 ) {
-    Box(
+    BoxWithConstraints(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
+        val screenWidth = maxWidth
+        val circleSize = (screenWidth * 0.6f).coerceAtMost(260.dp)
+        
         Box(
             modifier = Modifier
-                .size(260.dp)
+                .size(circleSize)
                 .background(BrandPalette.OceanBlue.copy(alpha = 0.14f), shape = CircleShape)
                 .alpha(0.8f)
         )
 
         Box(
             modifier = Modifier
+                .widthIn(max = screenWidth * 0.85f)
                 .shadow(elevation = 18.dp, shape = RoundedCornerShape(36.dp), clip = false)
                 .background(Color.White.copy(alpha = 0.96f), shape = RoundedCornerShape(36.dp))
-                .padding(horizontal = 64.dp, vertical = 28.dp)
+                .padding(horizontal = responsiveHorizontalPadding(), vertical = responsiveVerticalPadding())
         ) {
             Text(
                 text = page.headline,
                 color = BrandPalette.DeepBlue,
                 style = MaterialTheme.typography.displaySmall.copy(
                     fontWeight = FontWeight.Black,
-                    letterSpacing = 6.sp
-                )
+                    letterSpacing = if (getWindowSize() == WindowSize.COMPACT) 4.sp else 6.sp
+                ),
+                textAlign = TextAlign.Center,
+                maxLines = 2
             )
         }
     }
@@ -192,47 +207,62 @@ private fun LogoSlide(
     page: OnboardingPage,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+    BoxWithConstraints(
+        modifier = modifier.fillMaxSize()
     ) {
-        Box(
+        val screenWidth = maxWidth
+        val logoSize = (screenWidth * 0.5f).coerceAtMost(240.dp)
+        
+        Column(
             modifier = Modifier
-                .size(260.dp)
-                .shadow(24.dp, shape = CircleShape, clip = false)
-                .background(Color.White.copy(alpha = 0.92f), shape = CircleShape)
-                .padding(32.dp),
-            contentAlignment = Alignment.Center
+                .fillMaxSize()
+                .padding(horizontal = responsiveHorizontalPadding()),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.onboarding_logo),
-                contentDescription = "VacTrack logo",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit
-            )
-        }
-        Spacer(modifier = Modifier.height(28.dp))
-        Text(
-            text = page.headline,
-            color = BrandPalette.DeepBlue,
-            style = MaterialTheme.typography.displaySmall.copy(
-                fontWeight = FontWeight.Black,
-                letterSpacing = 4.sp
-            )
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        if (page.subheadline.isNotBlank()) {
+            Box(
+                modifier = Modifier
+                    .size(logoSize)
+                    .shadow(24.dp, shape = CircleShape, clip = false)
+                    .background(Color.White.copy(alpha = 0.92f), shape = CircleShape)
+                    .padding(logoSize * 0.15f),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.onboarding_logo),
+                    contentDescription = "VacTrack logo",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(responsiveSpacingLarge()))
+            
             Text(
-                text = page.subheadline,
-                color = BrandPalette.SlateGrey,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontSize = 16.sp,
-                    lineHeight = 24.sp,
-                    textAlign = TextAlign.Center
+                text = page.headline,
+                color = BrandPalette.DeepBlue,
+                style = MaterialTheme.typography.displaySmall.copy(
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = if (getWindowSize() == WindowSize.COMPACT) 2.sp else 4.sp
                 ),
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                maxLines = 2
             )
+            
+            Spacer(modifier = Modifier.height(responsiveSpacingSmall()))
+            
+            if (page.subheadline.isNotBlank()) {
+                Text(
+                    text = page.subheadline,
+                    color = BrandPalette.SlateGrey,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        textAlign = TextAlign.Center
+                    ),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.widthIn(max = 480.dp),
+                    maxLines = 3
+                )
+            }
         }
     }
 }
